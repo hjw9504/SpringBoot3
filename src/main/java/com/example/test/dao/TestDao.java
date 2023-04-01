@@ -5,6 +5,8 @@ import com.example.test.mapper.TestMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Slf4j
 @Repository
 public class TestDao {
@@ -18,7 +20,10 @@ public class TestDao {
         return testMapper.getInfo(id);
     }
 
-    public int registInfo(String id, String name) {
+    public int registInfo(String name) {
+        //create user id
+        String id = UUID.randomUUID().toString();
+
         return testMapper.insertInfo(id, name);
     }
 }

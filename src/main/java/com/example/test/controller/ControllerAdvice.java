@@ -26,7 +26,7 @@ public class ControllerAdvice {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleDefaultHandlerException(Exception e){
-        ErrorResponse response = new ErrorResponse(ErrorStatus.NOT_FOUND);
+        ErrorResponse response = new ErrorResponse(ErrorStatus.PARAMETER_NOT_FOUND);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }

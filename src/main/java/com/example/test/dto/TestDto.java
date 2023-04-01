@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 public class TestDto {
-    @NotBlank
     private String id;
     @NotBlank
     private String name;
+    private String regDate;
 }

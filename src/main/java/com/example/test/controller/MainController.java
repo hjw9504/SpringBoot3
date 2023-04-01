@@ -8,6 +8,8 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.parser.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,8 +35,8 @@ public class MainController {
         return "Test";
     }
 
-    @GetMapping(value = "/test/info")
-    public TestDto getInfo(@RequestParam String id) {
+    @GetMapping(value = "/user/info")
+    public ResponseEntity<TestDto> getInfo(@RequestParam String id) {
         log.info("Test Info: {}", id);
 
         if (StringUtils.isEmpty(id)) {
@@ -46,22 +48,15 @@ public class MainController {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        return result;
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @PostMapping(value = "/test/info", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public String registInfo(@Valid @RequestBody TestDto testDto) {
-        TestDto existInfo = testDao.getInfo(testDto.getId());
-
-        if (existInfo != null) {
-            log.warn("Already Exist User: {}", testDto.getId());
-            throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
-        }
-
-        int result = testDao.registInfo(testDto.getId(), testDto.getName());
+    @PostMapping(value = "/user/info", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<String> registInfo(@Valid @RequestBody TestDto testDto) {
+        int result = testDao.registInfo(testDto.getName());
 
         if (result > 0) {
-            return "Success";
+            return new ResponseEntity<>("Success", HttpStatus.OK);
         } else {
             log.error("Server Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
