@@ -8,8 +8,11 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorStatus {
     NOT_FOUND(HttpStatus.NOT_FOUND, 101, "NOT FOUND"),
+    ALREADY_EXIST(HttpStatus.BAD_REQUEST, 102, "ALREAY EXIST"),
+    PARAMETER_NOT_FOUND(HttpStatus.BAD_REQUEST, 103, "PARAMETER NOT FOUND"),
     TOKEN_VERIFY_FAIL(HttpStatus.BAD_REQUEST, 201, "TOKEN VERIFY FAIL"),
-    POSTING_REGISTER_FAIL(HttpStatus.BAD_REQUEST, 301, "POSTING REGISTER FAIL");
+    POSTING_REGISTER_FAIL(HttpStatus.BAD_REQUEST, 301, "POSTING REGISTER FAIL"),
+    SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 501, "SERVER ERROR");
 
     private HttpStatus status;
     private int errorCode;
