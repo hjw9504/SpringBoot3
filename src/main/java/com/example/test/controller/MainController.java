@@ -26,6 +26,7 @@ public class MainController {
 
     @GetMapping(value = "/")
     public String mainPage() {
+        log.info("Init");
         return "Hello";
     }
 
