@@ -132,7 +132,7 @@ public class UserService {
         }
 
         //jwt token
-        String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail());
+        String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setToken(token);
 
         //redis 등록
@@ -148,7 +148,7 @@ public class UserService {
         return member;
     }
 
-    public void verifyToken(String memberId, String token) {
+    public void verifyToken(String memberId, String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
         final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
         String tokenFromRedis = valueOperations.get(memberId);
 
@@ -156,7 +156,12 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        if (!jwtTokenService.validateToken(token)) {
+        MemberSecureInfo memberSecureInfo = userDao.getUserSecure(memberId);
+        if (memberSecureInfo == null) {
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
     }

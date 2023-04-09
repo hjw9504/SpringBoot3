@@ -80,7 +80,7 @@ public class MainController {
     }
 
     @PostMapping(value = "/user/token/verify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity verifyToken(@Valid @RequestHeader String token, @RequestBody Member member) {
+    public ResponseEntity verifyToken(@Valid @RequestHeader String token, @RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
         if (member.getMemberId() == null) {
             throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
         }
