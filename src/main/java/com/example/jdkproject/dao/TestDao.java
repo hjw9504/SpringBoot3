@@ -1,7 +1,7 @@
-package com.example.test.dao;
+package com.example.jdkproject.dao;
 
-import com.example.test.dto.TestDto;
-import com.example.test.mapper.TestMapper;
+import com.example.jdkproject.dto.TestDto;
+import com.example.jdkproject.mapper.TestMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 

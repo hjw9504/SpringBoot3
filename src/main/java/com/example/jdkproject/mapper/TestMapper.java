@@ -1,6 +1,6 @@
-package com.example.test.mapper;
+package com.example.jdkproject.mapper;
 
-import com.example.test.dto.TestDto;
+import com.example.jdkproject.dto.TestDto;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

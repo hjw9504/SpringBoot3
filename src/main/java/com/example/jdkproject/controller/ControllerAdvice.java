@@ -1,8 +1,8 @@
-package com.example.test.controller;
+package com.example.jdkproject.controller;
 
-import com.example.test.exception.CommonErrorException;
-import com.example.test.exception.ErrorResponse;
-import com.example.test.exception.ErrorStatus;
+import com.example.jdkproject.exception.CommonErrorException;
+import com.example.jdkproject.exception.ErrorResponse;
+import com.example.jdkproject.exception.ErrorStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +20,7 @@ public class ControllerAdvice {
 
     @ExceptionHandler(CommonErrorException.class)
     public ResponseEntity<ErrorResponse> handleCommonErrorException(CommonErrorException ex){
+        log.warn("Error: ", ex);
         ErrorResponse response = new ErrorResponse(ex.getErrorStatus());
         return new ResponseEntity<>(response, ex.getErrorStatus().getStatus());
     }

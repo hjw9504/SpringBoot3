@@ -1,4 +1,4 @@
-package com.example.test;
+package com.example.jdkproject;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -17,7 +17,7 @@ import javax.sql.DataSource;
 
 @Configuration
 @Slf4j
-@MapperScan(basePackages = {"com.example.test.mapper"}, sqlSessionFactoryRef="sqlSessionFactory", sqlSessionTemplateRef="sqlSessionTemplate")
+@MapperScan(basePackages = {"com.example.jdkproject.mapper"}, sqlSessionFactoryRef="sqlSessionFactory", sqlSessionTemplateRef="sqlSessionTemplate")
 public class DataConfig {
     @Primary
     @Bean(name="dataSource")

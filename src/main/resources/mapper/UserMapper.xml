@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.jdkproject.mapper.UserMapper">
+    <select id="getUser" resultType="com.example.jdkproject.domain.Member">
+        select * from member where user_id = #{userId}
+    </select>
+
+    <select id="getUserSecure" resultType="com.example.jdkproject.domain.MemberSecureInfo">
+        select * from member_secure where member_id = #{memberId}
+    </select>
+
+    <insert id="insertMemberSecure">
+        insert into member_secure(member_id, private_key, public_key) values(#{memberId}, #{privateKey}, #{publicKey})
+    </insert>
+
+    <insert id="insertMember">
+        insert into member(member_id, name, email, user_id, user_pw, phone, nickname, register_time, recent_login_time) values(#{memberId}, #{name}, #{email}, #{userId}, #{userPw}, #{phone}, #{nickname}, utc_timestamp(), null)
+    </insert>
+
+    <update id="updateLoginTime">
+        update member set recent_login_time = utc_timestamp where member_id = #{memberId}
+    </update>
+</mapper>

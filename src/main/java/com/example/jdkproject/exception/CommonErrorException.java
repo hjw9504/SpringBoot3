@@ -1,4 +1,4 @@
-package com.example.test.exception;
+package com.example.jdkproject.exception;
 
 import lombok.Getter;
 
