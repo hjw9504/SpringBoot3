@@ -78,4 +78,15 @@ public class MainController {
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
         return new ResponseEntity<>(member, HttpStatus.OK);
     }
+
+    @PostMapping(value = "/user/token/verify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity verifyToken(@Valid @RequestHeader String token, @RequestBody Member member) {
+        if (member.getMemberId() == null) {
+            throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
+        }
+
+        userService.verifyToken(member.getMemberId(), token);
+
+        return new ResponseEntity("success", HttpStatus.OK);
+    }
 }

@@ -25,6 +25,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -135,8 +136,8 @@ public class UserService {
         member.setToken(token);
 
         //redis 등록
-//        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-//        valueOperations.set(member.getMemberId(), token, 3600000, TimeUnit.MILLISECONDS);
+        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        valueOperations.set(member.getMemberId(), token, 3600000, TimeUnit.MILLISECONDS);
 
         int loginTimeResult = userDao.updateLoginTime(member.getMemberId());
         if (loginTimeResult <= 0 ) {
@@ -147,9 +148,9 @@ public class UserService {
         return member;
     }
 
-    public String verifyToken(String userId, String token) {
+    public void verifyToken(String memberId, String token) {
         final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String tokenFromRedis = valueOperations.get(userId);
+        String tokenFromRedis = valueOperations.get(memberId);
 
         if (!token.equals(tokenFromRedis)) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
@@ -158,8 +159,6 @@ public class UserService {
         if (!jwtTokenService.validateToken(token)) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
-
-        return "success";
     }
 
     private String encrypt(String text) throws NoSuchAlgorithmException {
