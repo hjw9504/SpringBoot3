@@ -20,7 +20,6 @@ public class ControllerAdvice {
 
     @ExceptionHandler(CommonErrorException.class)
     public ResponseEntity<ErrorResponse> handleCommonErrorException(CommonErrorException ex){
-        log.warn("Error: ", ex);
         ErrorResponse response = new ErrorResponse(ex.getErrorStatus());
         return new ResponseEntity<>(response, ex.getErrorStatus().getStatus());
     }
