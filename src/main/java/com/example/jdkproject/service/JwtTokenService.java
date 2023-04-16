@@ -18,7 +18,7 @@ import java.util.Date;
 public class JwtTokenService {
 
     // 토큰 유효시간 30분
-    private long tokenValidTime = 30 * 60 * 1000L;
+    private long tokenValidTime = 60 * 60 * 1000L;
 
     // JWT 토큰 생성
     public String createToken(String memberId, String name, String email, PrivateKey privateKey) {
@@ -34,6 +34,7 @@ public class JwtTokenService {
                 // signature 에 들어갈 secret값 세팅
                 .compact();
     }
+
     // 토큰의 유효성 + 만료일자 확인
     public boolean validateToken(String jwtToken, PublicKey publicKey) {
         try {
