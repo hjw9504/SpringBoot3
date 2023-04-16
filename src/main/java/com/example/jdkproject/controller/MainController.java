@@ -7,6 +7,7 @@ import com.example.jdkproject.dto.TestDto;
 import com.example.jdkproject.dto.UserDto;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
+import com.example.jdkproject.service.KafkaProducer;
 import com.example.jdkproject.service.UserService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.validation.Valid;
@@ -32,9 +33,12 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 public class MainController {
     private final UserService userService;
     private final TestDao testDao;
-    public MainController(UserService userService, TestDao testDao) {
+    private final KafkaProducer kafkaProducer;
+
+    public MainController(UserService userService, TestDao testDao, KafkaProducer kafkaProducer) {
         this.userService = userService;
         this.testDao = testDao;
+        this.kafkaProducer = kafkaProducer;
     }
 
     @GetMapping(value = "/")
@@ -76,6 +80,10 @@ public class MainController {
     public ResponseEntity<Member> getMemberInfo(@Valid @RequestBody LoginDto loginDto) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, BadPaddingException, InvalidKeyException {
         log.info("User Login");
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
+
+        //login message
+        kafkaProducer.sendMessage(member.getMemberId());
+
         return new ResponseEntity<>(member, HttpStatus.OK);
     }
 
