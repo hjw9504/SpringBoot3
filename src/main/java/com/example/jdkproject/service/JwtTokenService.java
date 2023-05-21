@@ -27,6 +27,7 @@ public class JwtTokenService {
         claims.put("email", email); // 정보는 key / value 쌍으로 저장된다.
         Date now = new Date();
         return Jwts.builder()
+                .setSubject(memberId)
                 .setClaims(claims) // 정보 저장
                 .setIssuedAt(now) // 토큰 발행 시간 정보
                 .setExpiration(new Date(now.getTime() + tokenValidTime)) // set Expire Time
