@@ -47,10 +47,10 @@ public class MainController {
         return "Hello";
     }
 
-    @GetMapping(value = "/test")
-    public String init() {
-        log.info("TEST");
-        return "Test";
+    @GetMapping(value = "/callback")
+    public String callbackTest(String code) {
+        log.info("Callback");
+        return "Code: "+code;
     }
 
     @GetMapping(value = "/user/info")
@@ -82,7 +82,7 @@ public class MainController {
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
 
         //login message
-        kafkaProducer.sendMessage(member.getMemberId());
+//        kafkaProducer.sendMessage(member.getMemberId());
 
         return new ResponseEntity<>(member, HttpStatus.OK);
     }
