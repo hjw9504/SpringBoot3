@@ -4,8 +4,10 @@ import com.example.jdkproject.dao.UserDao;
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.MemberSecureInfo;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.entity.MemberVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
+import com.example.jdkproject.repository.UserRepository;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,16 +35,19 @@ public class UserService {
     private final UserDao userDao;
     private final JwtTokenService jwtTokenService;
 
-    public UserService(UserDao userDao, JwtTokenService jwtTokenService) {
+    private final UserRepository userRepository;
+
+    public UserService(UserDao userDao, JwtTokenService jwtTokenService, UserRepository userRepository) {
         this.userDao = userDao;
         this.jwtTokenService = jwtTokenService;
+        this.userRepository = userRepository;
     }
 
     @Autowired
     RedisTemplate<String, String> redisTemplate;
 
-    public Member checkId(String id) {
-        Member member = userDao.getUser(id);
+    public MemberVo checkId(String id) {
+        MemberVo member = userRepository.findUserByUserId(id);
 
         if (member == null) {
             return null;
@@ -54,7 +59,7 @@ public class UserService {
     @Transactional
     public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
         // check user id
-        Member member = userDao.getUser(userDto.getUserId());
+        MemberVo member = userRepository.findUserByUserId(userDto.getUserId());
         if (member != null) {
             throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
         }
