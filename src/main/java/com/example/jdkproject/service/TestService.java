@@ -16,7 +16,6 @@ public class TestService {
 
     public TestVo findById(String id) {
         TestVo testVo = testRepository.findById(id);
-        log.info("AAAAA: {}", testVo);
         return testVo;
     }
 }

@@ -38,13 +38,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 public class UserService {
-    private final UserDao userDao;
     private final JwtTokenService jwtTokenService;
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
 
-    public UserService(UserDao userDao, JwtTokenService jwtTokenService, MemberRepository memberRepository, MemberSecureRepository memberSecureRepository) {
-        this.userDao = userDao;
+    public UserService(JwtTokenService jwtTokenService, MemberRepository memberRepository, MemberSecureRepository memberSecureRepository) {
         this.jwtTokenService = jwtTokenService;
         this.memberRepository = memberRepository;
         this.memberSecureRepository = memberSecureRepository;
