@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface UserRepository extends JpaRepository<MemberVo, Long> {
+public interface MemberRepository extends JpaRepository<MemberVo, Long> {
     public List<MemberVo> findUserByMemberId(String memberId);
 
     public MemberVo findUserByUserId(String userId);

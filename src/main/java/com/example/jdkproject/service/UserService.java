@@ -4,10 +4,12 @@ import com.example.jdkproject.dao.UserDao;
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.MemberSecureInfo;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.entity.MemberSecureVo;
 import com.example.jdkproject.entity.MemberVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
-import com.example.jdkproject.repository.UserRepository;
+import com.example.jdkproject.repository.MemberRepository;
+import com.example.jdkproject.repository.MemberSecureRepository;
 import io.micrometer.common.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,11 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -34,20 +40,21 @@ import java.util.concurrent.TimeUnit;
 public class UserService {
     private final UserDao userDao;
     private final JwtTokenService jwtTokenService;
+    private final MemberRepository memberRepository;
+    private final MemberSecureRepository memberSecureRepository;
 
-    private final UserRepository userRepository;
-
-    public UserService(UserDao userDao, JwtTokenService jwtTokenService, UserRepository userRepository) {
+    public UserService(UserDao userDao, JwtTokenService jwtTokenService, MemberRepository memberRepository, MemberSecureRepository memberSecureRepository) {
         this.userDao = userDao;
         this.jwtTokenService = jwtTokenService;
-        this.userRepository = userRepository;
+        this.memberRepository = memberRepository;
+        this.memberSecureRepository = memberSecureRepository;
     }
 
     @Autowired
     RedisTemplate<String, String> redisTemplate;
 
     public MemberVo checkId(String id) {
-        MemberVo member = userRepository.findUserByUserId(id);
+        MemberVo member = memberRepository.findUserByUserId(id);
 
         if (member == null) {
             return null;
@@ -59,7 +66,7 @@ public class UserService {
     @Transactional
     public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
         // check user id
-        MemberVo member = userRepository.findUserByUserId(userDto.getUserId());
+        MemberVo member = memberRepository.findUserByUserId(userDto.getUserId());
         if (member != null) {
             throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
         }
@@ -90,8 +97,10 @@ public class UserService {
             userDto.setPhone(encPhoneNumber);
         }
 
-        int result = userDao.insertUserSecure(memberId, publicKey, privateKey);
-        if (result <= 0) {
+        //put user secure info jpa
+        MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, publicKey, privateKey);
+        Object result = memberSecureRepository.save(memberSecureVo);
+        if (result == null) {
             log.error("DB Insert Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
@@ -100,29 +109,33 @@ public class UserService {
 
         log.info("Member: {}", userDto);
 
-        int registerResult = userDao.insertMember(userDto);
-        if (registerResult <= 0) {
+        // put member jpa
+        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null);
+        Object registerResult = memberRepository.save(memberVo);
+        if (registerResult == null) {
             log.error("DB Insert Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
 
     public Member login(String userId, String userPw) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, BadPaddingException, InvalidKeyException {
-        Member member = userDao.getUser(userId);
-        if (member == null) {
+        MemberVo memberVo = memberRepository.findUserByUserId(userId);
+        if (memberVo == null) {
             log.warn("User not Exist");
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        log.info("Member: {}", member);
+        //VO to DTO
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null);
+        log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
-        if (!encPw.equals(member.getUserPw())) {
+        if (!encPw.equals(memberVo.getUserPw())) {
             throw new CommonErrorException(ErrorStatus.WRONG_USER_PASSWORD);
         }
 
         //get member secure
-        MemberSecureInfo memberSecureInfo = userDao.getUserSecure(member.getMemberId());
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(member.getMemberId());
 
         // email
         String encEmail = member.getEmail();
