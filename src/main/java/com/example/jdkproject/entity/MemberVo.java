@@ -19,6 +19,7 @@ public class MemberVo {
     private String phone;
     private String nickname;
     private String registerTime;
+    @Column(name = "recent_login_time")
     private String recentLoginTime;
 
     @Builder

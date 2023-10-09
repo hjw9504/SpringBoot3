@@ -98,7 +98,7 @@ public class UserService {
         }
 
         //put user secure info jpa
-        MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, publicKey, privateKey);
+        MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
         Object result = memberSecureRepository.save(memberSecureVo);
         if (result == null) {
             log.error("DB Insert Error");
@@ -157,7 +157,7 @@ public class UserService {
         final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
         valueOperations.set(member.getMemberId(), token, 3600000, TimeUnit.MILLISECONDS);
 
-        int loginTimeResult = userDao.updateLoginTime(member.getMemberId());
+        int loginTimeResult = memberRepository.updateLastLoginTime(member.getMemberId(), LocalDateTime.now(ZoneOffset.UTC).toString());
         if (loginTimeResult <= 0 ) {
             log.warn("Login Time Update DB Error!");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
@@ -174,7 +174,7 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        MemberSecureInfo memberSecureInfo = userDao.getUserSecure(memberId);
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
         if (memberSecureInfo == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
