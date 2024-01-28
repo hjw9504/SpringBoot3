@@ -82,6 +82,13 @@ public class MainController {
         return new ResponseEntity("success", HttpStatus.OK);
     }
 
+    @GetMapping(value = "/check/userId", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<Boolean> checkUserId(@Valid @RequestParam String userId) {
+        Boolean result = userService.checkExistPlayer(userId);
+
+        return new ResponseEntity(result, HttpStatus.OK);
+    }
+
     @PostMapping(value = "/user/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<Member> getMemberInfo(@Valid @RequestBody LoginDto loginDto) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, BadPaddingException, InvalidKeyException {
         log.info("User Login");

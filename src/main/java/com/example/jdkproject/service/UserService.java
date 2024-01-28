@@ -64,8 +64,8 @@ public class UserService {
     @Transactional
     public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
         // check user id
-        MemberVo member = memberRepository.findUserByUserId(userDto.getUserId());
-        if (member != null) {
+        Boolean isExistingUser = checkExistPlayer(userDto.getUserId());
+        if (isExistingUser) {
             throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
         }
 
@@ -114,6 +114,15 @@ public class UserService {
             log.error("DB Insert Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
+    }
+
+    public Boolean checkExistPlayer(String userId) {
+        MemberVo member = memberRepository.findUserByUserId(userId);
+        if (member != null) {
+            return true;
+        }
+
+        return false;
     }
 
     public Member login(String userId, String userPw) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, BadPaddingException, InvalidKeyException {
