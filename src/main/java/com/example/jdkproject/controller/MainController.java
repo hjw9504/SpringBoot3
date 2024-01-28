@@ -110,4 +110,15 @@ public class MainController {
 
         return new ResponseEntity("success", HttpStatus.OK);
     }
+
+    @PostMapping(value = "/reset/password", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity resetPassword(@RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        if (member.getUserId() == null || member.getNewUserPw() == null) {
+            throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
+        }
+
+        userService.resetPassword(member.getUserId(), member.getNewUserPw());
+
+        return new ResponseEntity("success", HttpStatus.OK);
+    }
 }

@@ -133,7 +133,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null);
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null);
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
@@ -188,6 +188,16 @@ public class UserService {
 
         if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
+        }
+    }
+
+    public void resetPassword(String userId, String userPassword) {
+        try {
+            String userPw = encrypt(userPassword);
+            int result = memberRepository.resetUserPassword(userId, userPw);
+            return;
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
 

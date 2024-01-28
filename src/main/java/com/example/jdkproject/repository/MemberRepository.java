@@ -19,4 +19,9 @@ public interface MemberRepository extends JpaRepository<MemberVo, Long> {
     @Modifying(clearAutomatically = true)
     @Query("update member m set m.recentLoginTime = :recentLoginTime where m.memberId = :memberId")
     int updateLastLoginTime(String memberId, String recentLoginTime);
+
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("update member m set m.userPw = :userPw where m.userId = :userId")
+    int resetUserPassword(String userId, String userPw);
 }

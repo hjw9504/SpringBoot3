@@ -12,7 +12,6 @@ public class MemberVo {
     @Column(name = "member_id")
     private String memberId;
     private String userId;
-    @JsonIgnore
     private String userPw;
     private String name;
     private String email;
