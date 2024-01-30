@@ -19,4 +19,17 @@ public class Member {
     private String phone;
     private String nickName;
     private String token;
+    private String registerTime;
+    private String recentLoginTime;
+
+    @Builder
+    public Member(String userId, String name, String email, String phone, String nickName, String registerTime, String recentLoginTime) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.nickName = nickName;
+        this.registerTime = registerTime;
+        this.recentLoginTime = recentLoginTime;
+    }
 }

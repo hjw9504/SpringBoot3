@@ -27,6 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -60,14 +61,14 @@ public class MainController {
     }
 
     @GetMapping(value = "/user/info")
-    public ResponseEntity<MemberVo> getInfo(@RequestParam String id) {
+    public ResponseEntity<List<Member>> getInfo(@RequestParam String id) {
         log.info("User Info: {}", id);
 
         if (StringUtils.isEmpty(id)) {
             throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
         }
 
-        MemberVo result = userService.checkId(id);
+        List<Member> result = userService.checkId(id);
         if (result == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }

@@ -30,9 +30,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Base64;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -51,14 +49,41 @@ public class UserService {
     @Autowired
     RedisTemplate<String, String> redisTemplate;
 
-    public MemberVo checkId(String id) {
-        MemberVo member = memberRepository.findUserByUserId(id);
+    public List<Member> checkId(String id) {
+        try {
+            List<Member> memberList = new ArrayList<>();
 
-        if (member == null) {
+            if ("ALL".equals(id)) {
+                List<MemberVo> members = memberRepository.findAllUser();
+                for (MemberVo memberVo : members) {
+                    //get member secure
+                    MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
+
+                    // email
+                    String encEmail = memberVo.getEmail();
+                    String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime());
+                    memberList.add(member);
+                }
+                return memberList;
+            }
+
+            MemberVo memberVo = memberRepository.findUserByUserId(id);
+            if (memberVo == null) {
+                return null;
+            }
+
+            MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
+
+            // email
+            String encEmail = memberVo.getEmail();
+            String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime());
+            memberList.add(member);
+            return memberList;
+        } catch(Exception e) {
             return null;
         }
-
-        return member;
     }
 
     @Transactional
@@ -133,7 +158,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null);
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null);
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
