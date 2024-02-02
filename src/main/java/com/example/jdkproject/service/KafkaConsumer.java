@@ -12,7 +12,7 @@ import java.io.IOException;
 @Service
 public class KafkaConsumer {
 
-    @KafkaListener(topics = "myTestTopic", groupId = "testgroup")
+//    @KafkaListener(topics = "myTestTopic", groupId = "testgroup")
     public void consume(String message) throws IOException {
         log.info("Message Received From Kafka Server: {} login", message);
     }

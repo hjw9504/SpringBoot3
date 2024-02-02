@@ -1,7 +1,7 @@
 package com.example.jdkproject.controller;
 
 import com.example.jdkproject.exception.CommonErrorException;
-import com.example.jdkproject.exception.ErrorResponse;
+import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.exception.ErrorStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,14 +19,14 @@ public class ControllerAdvice {
     }
 
     @ExceptionHandler(CommonErrorException.class)
-    public ResponseEntity<ErrorResponse> handleCommonErrorException(CommonErrorException ex){
-        ErrorResponse response = new ErrorResponse(ex.getErrorStatus());
+    public ResponseEntity<Response> handleCommonErrorException(CommonErrorException ex){
+        Response response = new Response(ex.getErrorStatus());
         return new ResponseEntity<>(response, ex.getErrorStatus().getStatus());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleDefaultHandlerException(Exception e){
-        ErrorResponse response = new ErrorResponse(ErrorStatus.PARAMETER_NOT_FOUND);
+    public ResponseEntity<Response> handleDefaultHandlerException(Exception e){
+        Response response = new Response(ErrorStatus.PARAMETER_NOT_FOUND);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }
