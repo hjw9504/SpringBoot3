@@ -22,9 +22,10 @@ public class Member {
     private String token;
     private String registerTime;
     private String recentLoginTime;
+    private String role;
 
     @Builder
-    public Member(String userId, String name, String email, String phone, String nickName, String registerTime, String recentLoginTime) {
+    public Member(String userId, String name, String email, String phone, String nickName, String registerTime, String recentLoginTime, String role) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -32,5 +33,6 @@ public class Member {
         this.nickName = nickName;
         this.registerTime = registerTime;
         this.recentLoginTime = recentLoginTime;
+        this.role = role;
     }
 }

@@ -62,7 +62,7 @@ public class UserService {
                     // email
                     String encEmail = memberVo.getEmail();
                     String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime());
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
                     memberList.add(member);
                 }
                 return memberList;
@@ -78,7 +78,7 @@ public class UserService {
             // email
             String encEmail = memberVo.getEmail();
             String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime());
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
             memberList.add(member);
             return memberList;
         } catch(Exception e) {
@@ -133,7 +133,7 @@ public class UserService {
         log.info("Member: {}", userDto);
 
         // put member jpa
-        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null);
+        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER");
         Object registerResult = memberRepository.save(memberVo);
         if (registerResult == null) {
             log.error("DB Insert Error");
@@ -158,7 +158,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null);
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole());
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
