@@ -21,6 +21,10 @@ public class MemberVo {
     @Column(name = "recent_login_time")
     private String recentLoginTime;
 
+    public MemberVo(String memberId) {
+        this.memberId = memberId;
+    }
+
     @Builder
     public MemberVo(String memberId, String userId, String userPw, String name, String email, String phone, String nickname, String registerTime, String recentLoginTime) {
         this.memberId = memberId;

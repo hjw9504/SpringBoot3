@@ -20,4 +20,11 @@ public class PostingVo {
     @OneToOne
     @JoinColumn(name = "member_id")
     private MemberVo member;
+
+    public PostingVo(String title, String body, MemberVo member, String registerTime) {
+        this.member = member;
+        this.title = title;
+        this.body = body;
+        this.registerTime = registerTime;
+    }
 }

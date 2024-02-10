@@ -1,5 +1,6 @@
 package com.example.jdkproject.controller;
 
+import com.example.jdkproject.domain.Posting;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.entity.PostingResultProjection;
 import com.example.jdkproject.exception.CommonErrorException;
@@ -54,5 +55,24 @@ public class PostController {
 
         PostingResultProjection postingDetails = postingService.getPostByMemberId(postingId);
         return new Response<>(postingDetails, HttpStatus.OK, SUCCESS);
+    }
+
+    @PostMapping(value = "/posting/register")
+    @ResponseBody
+    public Response<String> saveNewPosting(@Valid @RequestHeader String token, @Valid @RequestBody Posting posting) {
+        try {
+            userService.verifyToken(posting.getMemberId(), token);
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
+        }
+
+        if (posting.getId() == 0) {
+            // register
+            postingService.saveNewPost(posting);
+        } else {
+            postingService.updatePost(posting);
+        }
+
+        return new Response("success", HttpStatus.OK, SUCCESS);
     }
 }

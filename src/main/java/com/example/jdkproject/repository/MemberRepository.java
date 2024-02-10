@@ -11,12 +11,12 @@ import java.util.List;
 
 @Repository
 public interface MemberRepository extends JpaRepository<MemberVo, Long> {
-    public List<MemberVo> findUserByMemberId(String memberId);
+    List<MemberVo> findUserByMemberId(String memberId);
 
-    public MemberVo findUserByUserId(String userId);
+    MemberVo findUserByUserId(String userId);
 
     @Query("select m from member m where 1=1")
-    public List<MemberVo> findAllUser();
+    List<MemberVo> findAllUser();
 
     @Transactional
     @Modifying(clearAutomatically = true)
