@@ -49,7 +49,7 @@ public class UserService {
     @Autowired
     RedisTemplate<String, String> redisTemplate;
 
-    public List<Member> checkId(String id) {
+    public List<Member> checkId(String id, String memberId) {
         try {
             List<Member> memberList = new ArrayList<>();
 
@@ -68,11 +68,12 @@ public class UserService {
                 return memberList;
             }
 
-            MemberVo memberVo = memberRepository.findUserByUserId(id);
-            if (memberVo == null) {
+            List<MemberVo> memberResult = memberRepository.findUserByMemberId(memberId);
+            if (memberResult == null && memberResult.size() == 0) {
                 return null;
             }
 
+            MemberVo memberVo = memberResult.get(0);
             MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
 
             // email

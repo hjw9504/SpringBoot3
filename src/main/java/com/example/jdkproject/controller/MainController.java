@@ -64,14 +64,16 @@ public class MainController {
     }
 
     @GetMapping(value = "/user/info")
-    public Response<List<Member>> getInfo(@RequestParam String id) {
+    public Response<List<Member>> getInfo(@RequestHeader String token, @RequestParam(required = false) String id, @RequestParam String memberId) {
         log.info("User Info: {}", id);
 
-        if (StringUtils.isEmpty(id)) {
-            throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
+        try {
+            userService.verifyToken(memberId, token);
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        List<Member> result = userService.checkId(id);
+        List<Member> result = userService.checkId(id, memberId);
         if (result == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
