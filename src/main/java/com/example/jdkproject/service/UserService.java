@@ -227,6 +227,16 @@ public class UserService {
         }
     }
 
+    public void updateNickName(Member member) {
+        MemberVo memberVo = memberRepository.findUserByUserId(member.getUserId());
+        if (memberVo == null) {
+            log.warn("User not Exist");
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        memberRepository.updateNickName(member.getMemberId(), member.getNickName());
+    }
+
     private String encrypt(String text) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(text.getBytes());

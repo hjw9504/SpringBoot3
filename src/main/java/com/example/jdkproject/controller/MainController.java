@@ -127,4 +127,13 @@ public class MainController {
 
         return new Response("success", HttpStatus.OK, SUCCESS);
     }
+
+    @PostMapping(value = "/update/nickname", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public Response updateNickName(@RequestHeader String token, @RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        userService.verifyToken(member.getMemberId(), token);
+
+        userService.updateNickName(member);
+
+        return new Response<>("success", HttpStatus.OK, SUCCESS);
+    }
 }
