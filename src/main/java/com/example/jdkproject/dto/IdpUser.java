@@ -6,8 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class IDPLoginDto {
-    private String accessToken;
-    private String idToken;
+public class IdpUser {
+    private String idpUserId;
     private String idpType;
 }
