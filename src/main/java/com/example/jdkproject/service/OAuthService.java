@@ -2,9 +2,8 @@ package com.example.jdkproject.service;
 
 import com.example.jdkproject.client.KakaoAuthClient;
 import com.example.jdkproject.client.KakaoOidcClient;
-import com.example.jdkproject.domain.KakaoOAuthRequest;
-import com.example.jdkproject.domain.KakaoOAuthResponse;
-import com.example.jdkproject.domain.KakaoOIDCResponse;
+import com.example.jdkproject.client.OAuth2Client;
+import com.example.jdkproject.domain.*;
 import com.example.jdkproject.dto.IDPLoginDto;
 import com.example.jdkproject.dto.IdpUser;
 import com.example.jdkproject.entity.OAuthVo;
@@ -21,11 +20,13 @@ public class OAuthService {
     private final OAuthRepository oAuthRepository;
     private final KakaoAuthClient kakaoClient;
     private final KakaoOidcClient kakaoOidcClient;
+    private final OAuth2Client oAuth2Client;
 
-    public OAuthService(OAuthRepository oAuthRepository, KakaoAuthClient kakaoClient, KakaoOidcClient kakaoOidcClient) {
+    public OAuthService(OAuthRepository oAuthRepository, KakaoAuthClient kakaoClient, KakaoOidcClient kakaoOidcClient, OAuth2Client oAuth2Client) {
         this.oAuthRepository = oAuthRepository;
         this.kakaoClient = kakaoClient;
         this.kakaoOidcClient = kakaoOidcClient;
+        this.oAuth2Client = oAuth2Client;
     }
 
     public OAuthVo getIdpOAuth(String idpType) {
@@ -53,26 +54,24 @@ public class OAuthService {
     }
 
     public IDPLoginDto getIdToken(OAuthVo oAuthVo, String code) {
-
-        String clientId = oAuthVo.getClientId();
-        String redirectUrl = "http://localhost:8080/oauth/callback/"+oAuthVo.getIdpType();
-
-        KakaoOAuthRequest request = KakaoOAuthRequest.builder()
-                .grant_type("authorization_code")
-                .client_id(clientId)
-                .redirect_uri(redirectUrl)
-                .code(code)
-                .client_secret(oAuthVo.getClientSecret())
-                .build();
-
-        KakaoOAuthResponse response = kakaoClient.getIdToken(request);
-
-        IDPLoginDto tokenResponse = IDPLoginDto.builder().accessToken(response.getAccess_token())
-                .idToken(response.getId_token())
-                .idpType(oAuthVo.getIdpType())
-                .build();
-
-        return tokenResponse;
+        switch(oAuthVo.getIdpType()) {
+            case "kakao":
+                KakaoOAuthResponse response = getKakaoTokenResponse(oAuthVo, code);
+                IDPLoginDto tokenResponse = IDPLoginDto.builder().accessToken(response.getAccess_token())
+                        .idToken(response.getId_token())
+                        .idpType(oAuthVo.getIdpType())
+                        .build();
+                return tokenResponse;
+            case "oauth2":
+                KakaoOAuthResponse res = getOAuth2TokenResponse(oAuthVo, code);
+                IDPLoginDto tokenRes = IDPLoginDto.builder().accessToken(res.getAccess_token())
+                        .idToken(res.getId_token())
+                        .idpType(oAuthVo.getIdpType())
+                        .build();
+                return tokenRes;
+            default:
+                return null;
+        }
     }
 
     public IdpUser verifyIDPToken(String token, String idpType) {
@@ -89,6 +88,7 @@ public class OAuthService {
     private String getOAuthUrl(String idpType) {
         switch(idpType) {
             case "kakao" : return "https://kauth.kakao.com/oauth/authorize";
+            case "oauth2" : return "http://localhost:8081/oauth2/authorize";
             case "google" : return "https://oauth.google.com/oauth/authorize";
             default : return null;
         }
@@ -97,8 +97,43 @@ public class OAuthService {
     private String getScope(String idpType) {
         switch(idpType) {
             case "kakao" : return "openId";
+            case "oauth2" : return "profile openid";
             case "google" : return "basic";
             default : return "basic";
         }
+    }
+
+    private KakaoOAuthResponse getKakaoTokenResponse(OAuthVo oAuthVo, String code) {
+        String clientId = oAuthVo.getClientId();
+        String redirectUrl = "http://localhost:8080/oauth/callback/"+oAuthVo.getIdpType();
+
+        KakaoOAuthRequest request = KakaoOAuthRequest.builder()
+                .grant_type("authorization_code")
+                .client_id(clientId)
+                .redirect_uri(redirectUrl)
+                .code(code)
+                .client_secret(oAuthVo.getClientSecret())
+                .build();
+
+        KakaoOAuthResponse response = kakaoClient.getIdToken(request);
+        return response;
+    }
+
+    private KakaoOAuthResponse getOAuth2TokenResponse(OAuthVo oAuthVo, String code) {
+        String clientId = oAuthVo.getClientId();
+        String redirectUrl = "http://localhost:8080/oauth/callback/"+oAuthVo.getIdpType();
+
+        OAuth2Request request = OAuth2Request.builder()
+                .grant_type("authorization_code")
+                .redirect_uri(redirectUrl)
+                .code(code)
+                .scope(getScope("oauth2"))
+                .build();
+//
+//        String authorization = "Basic "+"c3ByaW5nLW9hdXRoMjpzcHJpbmctb2F1dGgyLXNlY3JldA==";
+//        log.info("AAAAA:{}", "aaaaa");
+//        log.info("AAAAA:{}", oAuth2Client.getIdToken(authorization, request));
+//        KakaoOAuthResponse response = oAuth2Client.getIdToken(authorization, request);
+        return null;
     }
 }
