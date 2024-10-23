@@ -18,4 +18,8 @@ public class TestService {
         TestVo testVo = testRepository.findById(id);
         return testVo;
     }
+
+    public String initTest() {
+        return "HELLO";
+    }
 }
