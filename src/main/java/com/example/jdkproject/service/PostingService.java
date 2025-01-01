@@ -7,6 +7,7 @@ import com.example.jdkproject.entity.PostingVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.PostingRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,13 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class PostingService {
     private final PostingRepository postingRepository;
-
-    public PostingService(PostingRepository postingRepository) {
-        this.postingRepository = postingRepository;
-    }
 
     public List<PostingResultProjection> getAllPost() {
         List<PostingResultProjection> postingVos = postingRepository.findAllPosting();

@@ -11,6 +11,7 @@ import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.MemberRepository;
 import com.example.jdkproject.repository.MemberSecureRepository;
 import io.micrometer.common.util.StringUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -34,20 +35,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class UserService {
     private final JwtTokenService jwtTokenService;
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
-
-    public UserService(JwtTokenService jwtTokenService, MemberRepository memberRepository, MemberSecureRepository memberSecureRepository) {
-        this.jwtTokenService = jwtTokenService;
-        this.memberRepository = memberRepository;
-        this.memberSecureRepository = memberSecureRepository;
-    }
-
-    @Autowired
-    RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public List<Member> checkId(String id, String memberId) {
         try {

@@ -10,24 +10,19 @@ import com.example.jdkproject.entity.OAuthVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.OAuthRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class OAuthService {
     private final OAuthRepository oAuthRepository;
     private final KakaoAuthClient kakaoClient;
     private final KakaoOidcClient kakaoOidcClient;
     private final OAuth2Client oAuth2Client;
-
-    public OAuthService(OAuthRepository oAuthRepository, KakaoAuthClient kakaoClient, KakaoOidcClient kakaoOidcClient, OAuth2Client oAuth2Client) {
-        this.oAuthRepository = oAuthRepository;
-        this.kakaoClient = kakaoClient;
-        this.kakaoOidcClient = kakaoOidcClient;
-        this.oAuth2Client = oAuth2Client;
-    }
 
     public OAuthVo getIdpOAuth(String idpType) {
         OAuthVo oAuthVo = oAuthRepository.findIdpOAuth(idpType);
