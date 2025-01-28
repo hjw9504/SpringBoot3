@@ -1,23 +1,18 @@
 package com.example.jdkproject.controller;
 
-import com.example.jdkproject.dao.TestDao;
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.LoginDto;
-import com.example.jdkproject.dto.TestDto;
 import com.example.jdkproject.dto.UserDto;
-import com.example.jdkproject.entity.MemberVo;
-import com.example.jdkproject.entity.TestVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.KafkaProducer;
 import com.example.jdkproject.service.TestService;
 import com.example.jdkproject.service.UserService;
-import io.micrometer.common.util.StringUtils;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,22 +29,13 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @Validated
-public class MainController {
+public class UserController {
     private final UserService userService;
-    private final TestDao testDao;
     private final KafkaProducer kafkaProducer;
 
-    private final TestService testService;
-
     private final static int SUCCESS = 200;
-
-    public MainController(UserService userService, TestDao testDao, KafkaProducer kafkaProducer, TestService testService) {
-        this.userService = userService;
-        this.testDao = testDao;
-        this.kafkaProducer = kafkaProducer;
-        this.testService = testService;
-    }
 
     @GetMapping(value = "/")
     public String mainPage() {
@@ -101,7 +87,7 @@ public class MainController {
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
 
         //login message
-//        kafkaProducer.sendMessage(member.getMemberId());
+        kafkaProducer.sendMessage(member.getMemberId());
 
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }

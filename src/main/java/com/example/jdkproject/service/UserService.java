@@ -1,8 +1,6 @@
 package com.example.jdkproject.service;
 
-import com.example.jdkproject.dao.UserDao;
 import com.example.jdkproject.domain.Member;
-import com.example.jdkproject.domain.MemberSecureInfo;
 import com.example.jdkproject.dto.UserDto;
 import com.example.jdkproject.entity.MemberSecureVo;
 import com.example.jdkproject.entity.MemberVo;
@@ -13,7 +11,6 @@ import com.example.jdkproject.repository.MemberSecureRepository;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
