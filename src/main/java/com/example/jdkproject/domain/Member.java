@@ -23,6 +23,7 @@ public class Member {
     private String registerTime;
     private String recentLoginTime;
     private String role;
+    private String profileImage;
 
     @Builder
     public Member(String userId, String name, String email, String phone, String nickName, String registerTime, String recentLoginTime, String role) {

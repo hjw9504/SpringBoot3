@@ -5,6 +5,7 @@ public interface PostingResultProjection {
     String getMemberId();
     String getTitle();
     String getBody();
+    String getProfileImage();
     String getRegisterTime();
     String getModTime();
     String getName();

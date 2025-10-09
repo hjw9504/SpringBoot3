@@ -125,7 +125,7 @@ public class UserService {
         log.info("Member: {}", userDto);
 
         // put member jpa
-        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER");
+        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER", null);
         Object registerResult = memberRepository.save(memberVo);
         if (registerResult == null) {
             log.error("DB Insert Error");
@@ -150,7 +150,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole());
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole(), null);
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);

@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @Setter
-@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Response<T> {
     private T resultData;
     private HttpStatus status;

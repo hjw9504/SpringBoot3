@@ -29,8 +29,17 @@ public class PostingService {
         return postingVos;
     }
 
-    public PostingResultProjection getPostByMemberId(int postingId) {
-        PostingResultProjection postingVos = postingRepository.findPostingDetailByMemberId(postingId);
+    public PostingResultProjection getPostByPostingId(int postingId) {
+        PostingResultProjection postingVos = postingRepository.findPostingDetailByPostingId(postingId);
+        if (postingVos == null) {
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        return postingVos;
+    }
+
+    public List<PostingResultProjection> getPostByMemberId(String memberId) {
+        List<PostingResultProjection> postingVos = postingRepository.findPostingDetailByMemberId(memberId);
         if (postingVos == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }

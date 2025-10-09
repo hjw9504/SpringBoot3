@@ -9,6 +9,7 @@ public class PostingDto {
     private String memberId;
     private String title;
     private String body;
+    private String profileImage;
     private String registerTime;
     private String modTime;
     private String token;

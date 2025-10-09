@@ -21,13 +21,14 @@ public class MemberVo {
     @Column(name = "recent_login_time")
     private String recentLoginTime;
     private String role;
+    private String profileImage;
 
     public MemberVo(String memberId) {
         this.memberId = memberId;
     }
 
     @Builder
-    public MemberVo(String memberId, String userId, String userPw, String name, String email, String phone, String nickname, String registerTime, String recentLoginTime, String role) {
+    public MemberVo(String memberId, String userId, String userPw, String name, String email, String phone, String nickname, String registerTime, String recentLoginTime, String role, String profileImage) {
         this.memberId = memberId;
         this.userId = userId;
         this.userPw = userPw;
@@ -38,5 +39,6 @@ public class MemberVo {
         this.registerTime = registerTime;
         this.recentLoginTime = recentLoginTime;
         this.role = role;
+        this.profileImage = profileImage;
     }
 }

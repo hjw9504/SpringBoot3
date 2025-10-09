@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @Validated
 public class PostController {
-    private final static int SUCCESS = 200;
+    private final static int SUCCESS = 0;
 
     private final PostingService postingService;
     private final UserService userService;
@@ -30,7 +30,7 @@ public class PostController {
     }
 
     @GetMapping(value = "/posting/list")
-    public Response<List<PostingResultProjection>> getAllPost(@Valid @RequestParam String memberId, @Valid @RequestHeader String token) {
+    public Response<List<PostingResultProjection>> getPostByMemberId(@Valid @RequestParam String memberId, @Valid @RequestHeader String token) {
         try {
             // verify token
             userService.verifyToken(memberId, token);
@@ -38,12 +38,12 @@ public class PostController {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        List<PostingResultProjection> postingVos = postingService.getAllPost();
+        List<PostingResultProjection> postingVos = postingService.getPostByMemberId(memberId);
         return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
     }
 
     @GetMapping(value = "/posting/detail/{postingId}")
-    public Response<PostingResultProjection> getPostByMemberId(@Valid @RequestParam String memberId,
+    public Response<PostingResultProjection> getPostByPostingId(@Valid @RequestParam String memberId,
                                                                @Valid @PathVariable int postingId,
                                                                @Valid @RequestHeader String token) {
         try {
@@ -53,7 +53,7 @@ public class PostController {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        PostingResultProjection postingDetails = postingService.getPostByMemberId(postingId);
+        PostingResultProjection postingDetails = postingService.getPostByPostingId(postingId);
         return new Response<>(postingDetails, HttpStatus.OK, SUCCESS);
     }
 

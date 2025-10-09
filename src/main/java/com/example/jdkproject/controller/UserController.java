@@ -35,7 +35,7 @@ public class UserController {
     private final UserService userService;
     private final KafkaProducer kafkaProducer;
 
-    private final static int SUCCESS = 200;
+    private final static int SUCCESS = 0;
 
     @GetMapping(value = "/")
     public String mainPage() {
