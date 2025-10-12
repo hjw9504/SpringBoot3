@@ -1,7 +1,5 @@
 package com.example.jdkproject.client;
 
-import com.example.jdkproject.domain.KakaoOAuthRequest;
-import com.example.jdkproject.domain.KakaoOAuthResponse;
 import com.example.jdkproject.domain.KakaoOIDCResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;

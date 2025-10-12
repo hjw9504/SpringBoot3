@@ -30,10 +30,11 @@ public class PostController {
     }
 
     @GetMapping(value = "/posting/list")
-    public Response<List<PostingResultProjection>> getPostByMemberId(@Valid @RequestParam String memberId, @Valid @RequestHeader String token) {
+    public Response<List<PostingResultProjection>> getPostByMemberId(@Valid @RequestHeader String token,
+                                                                     @Valid @RequestParam String memberId) {
         try {
             // verify token
-            userService.verifyToken(memberId, token);
+            userService.verifyToken(token);
         } catch(Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
@@ -48,7 +49,7 @@ public class PostController {
                                                                @Valid @RequestHeader String token) {
         try {
             // verify token
-            userService.verifyToken(memberId, token);
+            userService.verifyToken(token);
         } catch(Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
@@ -61,7 +62,7 @@ public class PostController {
     @ResponseBody
     public Response<String> saveNewPosting(@Valid @RequestHeader String token, @Valid @RequestBody Posting posting) {
         try {
-            userService.verifyToken(posting.getMemberId(), token);
+            userService.verifyToken(token);
         } catch(Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }

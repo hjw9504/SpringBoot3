@@ -7,7 +7,6 @@ import com.example.jdkproject.dto.UserDto;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.KafkaProducer;
-import com.example.jdkproject.service.TestService;
 import com.example.jdkproject.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +53,7 @@ public class UserController {
         log.info("User Info: {}", id);
 
         try {
-            userService.verifyToken(memberId, token);
+            userService.verifyToken(token);
         } catch(Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
@@ -93,12 +92,8 @@ public class UserController {
     }
 
     @PostMapping(value = "/user/token/verify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response<String> verifyToken(@Valid @RequestHeader String token, @RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        if (member.getMemberId() == null) {
-            throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
-        }
-
-        userService.verifyToken(member.getMemberId(), token);
+    public Response<String> verifyToken(@Valid @RequestHeader String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        userService.verifyToken(token);
 
         return new Response("success", HttpStatus.OK, SUCCESS);
     }
@@ -116,7 +111,7 @@ public class UserController {
 
     @PostMapping(value = "/update/nickname", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response updateNickName(@RequestHeader String token, @RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        userService.verifyToken(member.getMemberId(), token);
+        userService.verifyToken(token);
 
         userService.updateNickName(member);
 

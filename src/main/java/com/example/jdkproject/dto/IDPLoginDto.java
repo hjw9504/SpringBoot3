@@ -1,6 +1,5 @@
 package com.example.jdkproject.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Data;
 

@@ -1,6 +1,5 @@
 package com.example.jdkproject.domain;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,6 +1,7 @@
 package com.example.jdkproject.service;
 
 import com.example.jdkproject.domain.Member;
+import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.UserDto;
 import com.example.jdkproject.entity.MemberSecureVo;
 import com.example.jdkproject.entity.MemberVo;
@@ -8,6 +9,7 @@ import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.MemberRepository;
 import com.example.jdkproject.repository.MemberSecureRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +27,9 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -39,6 +39,7 @@ public class UserService {
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public List<Member> checkId(String id, String memberId) {
         try {
@@ -177,10 +178,6 @@ public class UserService {
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setToken(token);
 
-        //redis 등록
-        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        valueOperations.set(member.getMemberId(), token, 3600000, TimeUnit.MILLISECONDS);
-
         int loginTimeResult = memberRepository.updateLastLoginTime(member.getMemberId(), LocalDateTime.now(ZoneOffset.UTC).toString());
         if (loginTimeResult <= 0 ) {
             log.warn("Login Time Update DB Error!");
@@ -190,13 +187,20 @@ public class UserService {
         return member;
     }
 
-    public void verifyToken(String memberId, String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String tokenFromRedis = valueOperations.get(memberId);
+    public void verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        // token payload parse
+        Map<String, String> claims = parsePayload(token);
 
-        if (!token.equals(tokenFromRedis)) {
+        // get jti and info from redis
+        JtiInfo jtiInfo;
+        try {
+            String jti = claims.get("jti");
+            jtiInfo = objectMapper.readValue(getRedisData(jti), JtiInfo.class);
+        } catch (Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
+
+        String memberId = jtiInfo.getMemberId();
 
         MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
         if (memberSecureInfo == null) {
@@ -290,5 +294,25 @@ public class UserService {
 
         return KeyFactory.getInstance("RSA")
                 .generatePrivate(new PKCS8EncodedKeySpec(decodedBase64PrivateKey));
+    }
+
+    private String getRedisData(String key) {
+        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        return valueOperations.get(key);
+    }
+
+    private Map<String, String> parsePayload(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+            }
+
+            // payload 부분 Base64 디코딩
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+            return objectMapper.readValue(payloadJson, Map.class);
+        } catch (Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+        }
     }
 }
