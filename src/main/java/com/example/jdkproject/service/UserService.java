@@ -1,14 +1,18 @@
 package com.example.jdkproject.service;
 
-import com.example.jdkproject.dao.UserDao;
 import com.example.jdkproject.domain.Member;
-import com.example.jdkproject.domain.MemberSecureInfo;
+import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.entity.MemberSecureVo;
+import com.example.jdkproject.entity.MemberVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
+import com.example.jdkproject.repository.MemberRepository;
+import com.example.jdkproject.repository.MemberSecureRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -23,39 +27,63 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class UserService {
-    private final UserDao userDao;
     private final JwtTokenService jwtTokenService;
+    private final MemberRepository memberRepository;
+    private final MemberSecureRepository memberSecureRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    public UserService(UserDao userDao, JwtTokenService jwtTokenService) {
-        this.userDao = userDao;
-        this.jwtTokenService = jwtTokenService;
-    }
+    public List<Member> checkId(String id, String memberId) {
+        try {
+            List<Member> memberList = new ArrayList<>();
 
-    @Autowired
-    RedisTemplate<String, String> redisTemplate;
+            if ("ALL".equals(id)) {
+                List<MemberVo> members = memberRepository.findAllUser();
+                for (MemberVo memberVo : members) {
+                    //get member secure
+                    MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
 
-    public Member checkId(String id) {
-        Member member = userDao.getUser(id);
+                    // email
+                    String encEmail = memberVo.getEmail();
+                    String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+                    memberList.add(member);
+                }
+                return memberList;
+            }
 
-        if (member == null) {
+            List<MemberVo> memberResult = memberRepository.findUserByMemberId(memberId);
+            if (memberResult == null && memberResult.size() == 0) {
+                return null;
+            }
+
+            MemberVo memberVo = memberResult.get(0);
+            MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
+
+            // email
+            String encEmail = memberVo.getEmail();
+            String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+            memberList.add(member);
+            return memberList;
+        } catch(Exception e) {
             return null;
         }
-
-        return member;
     }
 
     @Transactional
     public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
         // check user id
-        Member member = userDao.getUser(userDto.getUserId());
-        if (member != null) {
+        Boolean isExistingUser = checkExistPlayer(userDto.getUserId());
+        if (isExistingUser) {
             throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
         }
 
@@ -85,8 +113,10 @@ public class UserService {
             userDto.setPhone(encPhoneNumber);
         }
 
-        int result = userDao.insertUserSecure(memberId, publicKey, privateKey);
-        if (result <= 0) {
+        //put user secure info jpa
+        MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
+        Object result = memberSecureRepository.save(memberSecureVo);
+        if (result == null) {
             log.error("DB Insert Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
@@ -95,29 +125,42 @@ public class UserService {
 
         log.info("Member: {}", userDto);
 
-        int registerResult = userDao.insertMember(userDto);
-        if (registerResult <= 0) {
+        // put member jpa
+        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER", null);
+        Object registerResult = memberRepository.save(memberVo);
+        if (registerResult == null) {
             log.error("DB Insert Error");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
 
+    public Boolean checkExistPlayer(String userId) {
+        MemberVo member = memberRepository.findUserByUserId(userId);
+        if (member != null) {
+            return true;
+        }
+
+        return false;
+    }
+
     public Member login(String userId, String userPw) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, BadPaddingException, InvalidKeyException {
-        Member member = userDao.getUser(userId);
-        if (member == null) {
+        MemberVo memberVo = memberRepository.findUserByUserId(userId);
+        if (memberVo == null) {
             log.warn("User not Exist");
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        log.info("Member: {}", member);
+        //VO to DTO
+        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole(), null);
+        log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
-        if (!encPw.equals(member.getUserPw())) {
+        if (!encPw.equals(memberVo.getUserPw())) {
             throw new CommonErrorException(ErrorStatus.WRONG_USER_PASSWORD);
         }
 
         //get member secure
-        MemberSecureInfo memberSecureInfo = userDao.getUserSecure(member.getMemberId());
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(member.getMemberId());
 
         // email
         String encEmail = member.getEmail();
@@ -135,11 +178,7 @@ public class UserService {
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setToken(token);
 
-        //redis 등록
-        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        valueOperations.set(member.getMemberId(), token, 3600000, TimeUnit.MILLISECONDS);
-
-        int loginTimeResult = userDao.updateLoginTime(member.getMemberId());
+        int loginTimeResult = memberRepository.updateLastLoginTime(member.getMemberId(), LocalDateTime.now(ZoneOffset.UTC).toString());
         if (loginTimeResult <= 0 ) {
             log.warn("Login Time Update DB Error!");
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
@@ -148,15 +187,22 @@ public class UserService {
         return member;
     }
 
-    public void verifyToken(String memberId, String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String tokenFromRedis = valueOperations.get(memberId);
+    public void verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        // token payload parse
+        Map<String, String> claims = parsePayload(token);
 
-        if (!token.equals(tokenFromRedis)) {
+        // get jti and info from redis
+        JtiInfo jtiInfo;
+        try {
+            String jti = claims.get("jti");
+            jtiInfo = objectMapper.readValue(getRedisData(jti), JtiInfo.class);
+        } catch (Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
 
-        MemberSecureInfo memberSecureInfo = userDao.getUserSecure(memberId);
+        String memberId = jtiInfo.getMemberId();
+
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
         if (memberSecureInfo == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
@@ -164,6 +210,26 @@ public class UserService {
         if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
+    }
+
+    public void resetPassword(String userId, String userPassword) {
+        try {
+            String userPw = encrypt(userPassword);
+            int result = memberRepository.resetUserPassword(userId, userPw);
+            return;
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+    }
+
+    public void updateNickName(Member member) {
+        MemberVo memberVo = memberRepository.findUserByUserId(member.getUserId());
+        if (memberVo == null) {
+            log.warn("User not Exist");
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        memberRepository.updateNickName(member.getMemberId(), member.getNickName());
     }
 
     private String encrypt(String text) throws NoSuchAlgorithmException {
@@ -228,5 +294,25 @@ public class UserService {
 
         return KeyFactory.getInstance("RSA")
                 .generatePrivate(new PKCS8EncodedKeySpec(decodedBase64PrivateKey));
+    }
+
+    private String getRedisData(String key) {
+        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        return valueOperations.get(key);
+    }
+
+    private Map<String, String> parsePayload(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+            }
+
+            // payload 부분 Base64 디코딩
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+            return objectMapper.readValue(payloadJson, Map.class);
+        } catch (Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+        }
     }
 }
