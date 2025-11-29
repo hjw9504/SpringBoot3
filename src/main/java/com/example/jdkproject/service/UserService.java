@@ -54,7 +54,7 @@ public class UserService {
                     // email
                     String encEmail = memberVo.getEmail();
                     String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime());
                     memberList.add(member);
                 }
                 return memberList;
@@ -71,7 +71,7 @@ public class UserService {
             // email
             String encEmail = memberVo.getEmail();
             String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime());
             memberList.add(member);
             return memberList;
         } catch(Exception e) {
@@ -80,7 +80,7 @@ public class UserService {
     }
 
     @Transactional
-    public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
+    public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         // check user id
         Boolean isExistingUser = checkExistPlayer(userDto.getUserId());
         if (isExistingUser) {
@@ -126,7 +126,7 @@ public class UserService {
         log.info("Member: {}", userDto);
 
         // put member jpa
-        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER", null);
+        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(), null, "USER", null, null);
         Object registerResult = memberRepository.save(memberVo);
         if (registerResult == null) {
             log.error("DB Insert Error");
@@ -151,7 +151,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole(), null);
+        Member member = new Member().toMember(memberVo, userId);
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
@@ -178,11 +178,8 @@ public class UserService {
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setToken(token);
 
-        int loginTimeResult = memberRepository.updateLastLoginTime(member.getMemberId(), LocalDateTime.now(ZoneOffset.UTC).toString());
-        if (loginTimeResult <= 0 ) {
-            log.warn("Login Time Update DB Error!");
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        memberVo.updateMemberLastLoginTime();
+        memberRepository.save(memberVo);
 
         return member;
     }
@@ -229,7 +226,15 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        memberRepository.updateNickName(member.getMemberId(), member.getNickName());
+        // 최근 업데이트 확인
+        if (memberVo.getUpdateNicknameTime() != null && LocalDateTime.now().minusDays(1).isBefore(memberVo.getUpdateNicknameTime())) {
+            log.info("{} {}", LocalDateTime.now().minusDays(1), memberVo.getUpdateNicknameTime());
+            throw new CommonErrorException(ErrorStatus.CANNOT_UPDATE_NICKNAME);
+        }
+
+        memberVo.updateMemberNickname(member.getNickName());
+
+        memberRepository.save(memberVo);
     }
 
     private String encrypt(String text) throws NoSuchAlgorithmException {

@@ -1,11 +1,15 @@
 package com.example.jdkproject.domain;
 
+import com.example.jdkproject.entity.MemberVo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -20,13 +24,13 @@ public class Member {
     private String phone;
     private String nickName;
     private String token;
-    private String registerTime;
-    private String recentLoginTime;
+    private LocalDateTime registerTime;
+    private LocalDateTime recentLoginTime;
     private String role;
     private String profileImage;
+    private LocalDateTime updateNicknameTime;
 
-    @Builder
-    public Member(String userId, String name, String email, String phone, String nickName, String registerTime, String recentLoginTime, String role) {
+    public Member(String userId, String name, String email, String phone, String nickName, LocalDateTime registerTime, LocalDateTime recentLoginTime, String role, LocalDateTime updateNicknameTime) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -35,5 +39,18 @@ public class Member {
         this.registerTime = registerTime;
         this.recentLoginTime = recentLoginTime;
         this.role = role;
+        this.updateNicknameTime = updateNicknameTime;
+    }
+
+    public Member toMember(MemberVo memberVo, String userId) {
+        return Member.builder()
+                .memberId(memberVo.getMemberId())
+                .userId(userId)
+                .name(memberVo.getName())
+                .email(memberVo.getEmail())
+                .phone(memberVo.getPhone())
+                .nickName(memberVo.getNickname())
+                .role(memberVo.getRole())
+                .build();
     }
 }
