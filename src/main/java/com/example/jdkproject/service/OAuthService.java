@@ -41,7 +41,7 @@ public class OAuthService {
         oauthUrl = UriComponentsBuilder.fromHttpUrl(oauthUrl)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", oAuthVo.getClientId())
-                .queryParam("redirect_uri", "http://localhost:8080/oauth/callback/"+oAuthVo.getIdpType())
+                .queryParam("redirect_uri", "http://localhost:8081/oauth/callback/"+oAuthVo.getIdpType())
                 .queryParam("scope", scope)
                 .toUriString();
 
@@ -100,7 +100,7 @@ public class OAuthService {
 
     private KakaoOAuthResponse getKakaoTokenResponse(OAuthVo oAuthVo, String code) {
         String clientId = oAuthVo.getClientId();
-        String redirectUrl = "http://localhost:8080/oauth/callback/"+oAuthVo.getIdpType();
+        String redirectUrl = "http://localhost:8081/oauth/callback/"+oAuthVo.getIdpType();
 
         KakaoOAuthRequest request = KakaoOAuthRequest.builder()
                 .grant_type("authorization_code")

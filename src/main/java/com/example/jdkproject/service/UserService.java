@@ -212,9 +212,22 @@ public class UserService {
     public void resetPassword(String userId, String userPassword) {
         try {
             String userPw = encrypt(userPassword);
+
+            // 기존 password를 가져와서 동일한지 비교
+            MemberVo memberVo = memberRepository.findUserByUserId(userId);
+            if (memberVo == null) {
+                log.warn("User not Exist");
+                throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+            }
+
+            if (userPw.equals(memberVo.getUserPw())) {
+                throw new CommonErrorException(ErrorStatus.SAME_PASSWORD);
+            }
+
             int result = memberRepository.resetUserPassword(userId, userPw);
-            return;
-        } catch(Exception e) {
+        } catch (CommonErrorException e) {
+            throw e;
+        } catch (Exception e) {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }

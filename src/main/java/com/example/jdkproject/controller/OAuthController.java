@@ -47,7 +47,6 @@ public class OAuthController {
         }
 
         IDPLoginDto response = oAuthService.getIdToken(oAuthVo, code);
-        String accessToken = response.getAccessToken();
 
         return new Response<>(response, HttpStatus.OK, ResponseStatus.SUCCESS.getCode());
     }
