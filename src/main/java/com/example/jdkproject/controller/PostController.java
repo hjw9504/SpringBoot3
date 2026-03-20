@@ -44,8 +44,7 @@ public class PostController {
     }
 
     @GetMapping(value = "/posting/detail/{postingId}")
-    public Response<PostingResultProjection> getPostByPostingId(@Valid @RequestParam String memberId,
-                                                               @Valid @PathVariable int postingId,
+    public Response<PostingResultProjection> getPostByPostingId(@Valid @PathVariable int postingId,
                                                                @Valid @RequestHeader String token) {
         try {
             // verify token

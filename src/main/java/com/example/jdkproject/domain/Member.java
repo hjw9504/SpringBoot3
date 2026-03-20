@@ -30,7 +30,7 @@ public class Member {
     private String profileImage;
     private LocalDateTime updateNicknameTime;
 
-    public Member(String userId, String name, String email, String phone, String nickName, LocalDateTime registerTime, LocalDateTime recentLoginTime, String role, LocalDateTime updateNicknameTime) {
+    public Member(String userId, String name, String email, String phone, String nickName, LocalDateTime registerTime, LocalDateTime recentLoginTime, String role, LocalDateTime updateNicknameTime, String profileImage) {
         this.userId = userId;
         this.name = name;
         this.email = email;
@@ -40,6 +40,7 @@ public class Member {
         this.recentLoginTime = recentLoginTime;
         this.role = role;
         this.updateNicknameTime = updateNicknameTime;
+        this.profileImage = profileImage;
     }
 
     public Member toMember(MemberVo memberVo, String userId) {

@@ -54,14 +54,14 @@ public class UserService {
                     // email
                     String encEmail = memberVo.getEmail();
                     String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime());
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
                     memberList.add(member);
                 }
                 return memberList;
             }
 
             List<MemberVo> memberResult = memberRepository.findUserByMemberId(memberId);
-            if (memberResult == null && memberResult.size() == 0) {
+            if (memberResult == null && memberResult.isEmpty()) {
                 return null;
             }
 
@@ -71,7 +71,7 @@ public class UserService {
             // email
             String encEmail = memberVo.getEmail();
             String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime());
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
             memberList.add(member);
             return memberList;
         } catch(Exception e) {
