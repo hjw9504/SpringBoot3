@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 
 @Slf4j
@@ -40,6 +40,8 @@ public class UserService {
     private final MemberSecureRepository memberSecureRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    private final static String PROFILE_IMAGE_PREFIX = "https://api.dicebear.com/7.x/lorelei/svg?seed=";
 
     public List<Member> checkId(String id, String memberId) {
         try {
@@ -60,12 +62,11 @@ public class UserService {
                 return memberList;
             }
 
-            List<MemberVo> memberResult = memberRepository.findUserByMemberId(memberId);
-            if (memberResult == null && memberResult.isEmpty()) {
-                return null;
-            }
+            MemberVo memberVo = memberRepository.findUserByMemberId(memberId)
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0))
+                    .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
 
-            MemberVo memberVo = memberResult.get(0);
             MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
 
             // email
@@ -115,32 +116,34 @@ public class UserService {
 
         //put user secure info jpa
         MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
-        Object result = memberSecureRepository.save(memberSecureVo);
-        if (result == null) {
-            log.error("DB Insert Error");
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        memberSecureRepository.save(memberSecureVo);
 
         userDto.setMemberId(memberId);
 
         log.info("Member: {}", userDto);
 
         // put member jpa
-        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(), null, "USER", null, null);
-        Object registerResult = memberRepository.save(memberVo);
-        if (registerResult == null) {
-            log.error("DB Insert Error");
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        MemberVo memberVo = MemberVo.builder()
+                .memberId(memberId)
+                .userId(userDto.getUserId())
+                .userPw(userPw)
+                .name(userDto.getName())
+                .email(userDto.getEmail())
+                .phone(userDto.getPhone())
+                .nickname(userDto.getNickName())
+                .registerTime(LocalDateTime.now())
+                .recentLoginTime(null)
+                .role("USER")
+                .profileImage(PROFILE_IMAGE_PREFIX + RandomStringUtils.randomAlphanumeric(10))
+                .updateNicknameTime(null)
+                .build();
+
+        memberRepository.save(memberVo);
     }
 
     public Boolean checkExistPlayer(String userId) {
         MemberVo member = memberRepository.findUserByUserId(userId);
-        if (member != null) {
-            return true;
-        }
-
-        return false;
+        return member != null;
     }
 
     public Member login(String userId, String userPw) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, BadPaddingException, InvalidKeyException {
@@ -184,7 +187,7 @@ public class UserService {
         return member;
     }
 
-    public void verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public JtiInfo verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // token payload parse
         Map<String, String> claims = parsePayload(token);
 
@@ -207,6 +210,8 @@ public class UserService {
         if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
+
+        return jtiInfo;
     }
 
     public void resetPassword(String userId, String userPassword) {

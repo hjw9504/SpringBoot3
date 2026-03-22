@@ -86,7 +86,7 @@ public class UserController {
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
 
         //login message
-        kafkaProducer.sendMessage(member);
+//        kafkaProducer.sendMessage(member);
 
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }

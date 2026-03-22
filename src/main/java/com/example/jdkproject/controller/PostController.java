@@ -1,7 +1,11 @@
 package com.example.jdkproject.controller;
 
+import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Posting;
 import com.example.jdkproject.domain.Response;
+import com.example.jdkproject.dto.JtiInfo;
+import com.example.jdkproject.dto.PostingDto;
+import com.example.jdkproject.dto.PostingLikesDto;
 import com.example.jdkproject.entity.PostingResultProjection;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
@@ -27,6 +31,20 @@ public class PostController {
     public PostController(PostingService postingService, UserService userService) {
         this.postingService = postingService;
         this.userService = userService;
+    }
+
+    @GetMapping(value = "/posting/all")
+    public Response<List<PostingDto>> getAllPost(@Valid @RequestHeader String token,
+                                                 @RequestParam(required = false) String memberId) {
+        try {
+            // verify token
+            userService.verifyToken(token);
+
+            List<PostingDto> postingVos = postingService.getAllPost(memberId);
+            return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
+        }
     }
 
     @GetMapping(value = "/posting/list")
@@ -74,5 +92,33 @@ public class PostController {
         }
 
         return new Response("success", HttpStatus.OK, SUCCESS);
+    }
+
+    @GetMapping("/posting/likes/{postingId}")
+    public Response<List<PostingLikesDto>> getPostLikesWithMemberId(@RequestHeader String token,
+                                                              @PathVariable int postingId) {
+        try {
+            JtiInfo info = userService.verifyToken(token);
+            return new Response<>(postingService.getPostLikes(postingId, info.getMemberId()), HttpStatus.OK, SUCCESS);
+        } catch(CommonErrorException e) {
+            throw e;
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/posting/likes/{type}/{postingId}")
+    public Response<Void> updatePostingLikes(@RequestHeader String token,
+                                             @PathVariable String type,
+                                             @PathVariable int postingId) {
+        try {
+            JtiInfo info = userService.verifyToken(token);
+            postingService.updatePostLikes(info.getMemberId(), postingId, type);
+            return new Response<>(HttpStatus.OK, SUCCESS);
+        } catch(CommonErrorException e) {
+            throw e;
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
     }
 }

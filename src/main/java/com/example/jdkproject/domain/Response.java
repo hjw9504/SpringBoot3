@@ -15,6 +15,11 @@ public class Response<T> {
     private int errorCode;
     private String message;
 
+    public Response(HttpStatus status, int errorCode) {
+        this.status = status;
+        this.errorCode = errorCode;
+    }
+
     public Response(T resultData, HttpStatus status, int errorCode) {
         this.status = status;
         this.resultData = resultData;
