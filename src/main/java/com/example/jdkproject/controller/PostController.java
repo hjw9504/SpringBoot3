@@ -1,6 +1,5 @@
 package com.example.jdkproject.controller;
 
-import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Posting;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.JtiInfo;
@@ -42,7 +41,11 @@ public class PostController {
 
             List<PostingDto> postingVos = postingService.getAllPost(memberId);
             return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
+        } catch(CommonErrorException e) {
+            log.warn("Get posting error : {}", e.getMessage());
+            throw e;
         } catch(Exception e) {
+            log.warn("Get posting error : {}", e.getMessage());
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
     }

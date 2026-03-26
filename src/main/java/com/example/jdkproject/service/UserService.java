@@ -1,18 +1,23 @@
 package com.example.jdkproject.service;
 
 import com.example.jdkproject.domain.Member;
+import com.example.jdkproject.dto.IDPLoginDto;
+import com.example.jdkproject.dto.IdpUser;
 import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.entity.MemberChannelVo;
 import com.example.jdkproject.entity.MemberSecureVo;
 import com.example.jdkproject.entity.MemberVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
+import com.example.jdkproject.repository.MemberChannelRepository;
 import com.example.jdkproject.repository.MemberRepository;
 import com.example.jdkproject.repository.MemberSecureRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -36,8 +41,10 @@ import java.util.*;
 @Service
 public class UserService {
     private final JwtTokenService jwtTokenService;
+    private final OAuthService oAuthService;
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
+    private final MemberChannelRepository memberChannelRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -71,11 +78,12 @@ public class UserService {
 
             // email
             String encEmail = memberVo.getEmail();
-            String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
             Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
             memberList.add(member);
             return memberList;
         } catch(Exception e) {
+            log.warn("Error while getting user info : ", e);
             return null;
         }
     }
@@ -141,6 +149,63 @@ public class UserService {
         memberRepository.save(memberVo);
     }
 
+    @Transactional
+    public void registerIdp(IDPLoginDto dto) {
+        try {
+            // get user channel
+            IdpUser idpUser = oAuthService.verifyIDPToken(dto.getAccessToken(), dto.getIdpType());
+
+            Optional<MemberChannelVo> idpRegisterResult = memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUser.getIdpUserId(), idpUser.getIdpType());
+            if (idpRegisterResult.isPresent()) {
+                throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
+            }
+
+            //create user id
+            String memberId = UUID.randomUUID().toString();
+
+            // put member jpa
+            MemberVo memberVo = MemberVo.builder()
+                    .memberId(memberId)
+                    .userId(memberId)
+                    .userPw(UUID.randomUUID().toString())
+                    .name(null)
+                    .email(null)
+                    .phone(null)
+                    .nickname(idpUser.getIdpType() + " USER")
+                    .registerTime(LocalDateTime.now())
+                    .recentLoginTime(null)
+                    .role("USER")
+                    .profileImage(PROFILE_IMAGE_PREFIX + RandomStringUtils.randomAlphanumeric(10))
+                    .updateNicknameTime(null)
+                    .build();
+
+            memberRepository.save(memberVo);
+
+            KeyPair keyPair = genRSAKeyPair();
+            PublicKey publicKeyPair = keyPair.getPublic();
+
+            String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+            String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+            //put user secure info jpa
+            MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
+            memberSecureRepository.save(memberSecureVo);
+
+            MemberChannelVo memberChannelVo = MemberChannelVo.builder()
+                    .memberId(memberId)
+                    .idpUserId(idpUser.getIdpUserId())
+                    .idpType(idpUser.getIdpType())
+                    .registerTime(LocalDateTime.now())
+                    .build();
+
+            memberChannelRepository.save(memberChannelVo);
+        } catch (CommonErrorException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+    }
+
     public Boolean checkExistPlayer(String userId) {
         MemberVo member = memberRepository.findUserByUserId(userId);
         return member != null;
@@ -179,6 +244,42 @@ public class UserService {
 
         //jwt token
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        member.setToken(token);
+
+        memberVo.updateMemberLastLoginTime();
+        memberRepository.save(memberVo);
+
+        return member;
+    }
+
+    public Member loginIdp(String idpUserId, String idpType) {
+        Optional<MemberChannelVo> memberChannelResult = memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUserId, idpType);
+        if (memberChannelResult.isEmpty()) {
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        MemberChannelVo memberChannelVo = memberChannelResult.get();
+
+        // get member with member_id
+        MemberVo memberVo = memberRepository.findUserByMemberId(memberChannelVo.getMemberId())
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.get(0))
+                .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
+
+        //VO to DTO
+        Member member = new Member().toMember(memberVo, memberVo.getUserId());
+
+        //get member secure
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(member.getMemberId());
+
+        //jwt token
+        String token = null;
+        try {
+            token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+
         member.setToken(token);
 
         memberVo.updateMemberLastLoginTime();

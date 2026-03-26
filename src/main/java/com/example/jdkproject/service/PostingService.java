@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,7 +35,7 @@ public class PostingService {
     public List<PostingDto> getAllPost(String memberId) {
         List<PostingResultProjection> postingVos = postingRepository.findAllPosting();
         if (postingVos == null || postingVos.isEmpty()) {
-            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+            return Collections.EMPTY_LIST;
         }
 
         return postingVos.stream().map(p -> {

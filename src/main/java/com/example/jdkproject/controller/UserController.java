@@ -2,11 +2,15 @@ package com.example.jdkproject.controller;
 
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Response;
+import com.example.jdkproject.dto.IDPLoginDto;
+import com.example.jdkproject.dto.IdpUser;
 import com.example.jdkproject.dto.LoginDto;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.enums.ResponseStatus;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.KafkaProducer;
+import com.example.jdkproject.service.OAuthService;
 import com.example.jdkproject.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Validated
 public class UserController {
     private final UserService userService;
+    private final OAuthService oAuthService;
     private final KafkaProducer kafkaProducer;
 
     private final static int SUCCESS = 0;
@@ -49,7 +54,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/user/info")
-    public Response<List<Member>> getInfo(@RequestHeader String token, @RequestParam(required = false) String id, @RequestParam String memberId) {
+    public Response<List<Member>> getInfo(@RequestHeader String token, @RequestParam(required = false) String id, @RequestParam(name = "member_id") String memberId) {
         log.info("User Info: {}", id);
 
         try {
@@ -73,10 +78,15 @@ public class UserController {
         return new Response<>("success", HttpStatus.OK, SUCCESS);
     }
 
+    @PostMapping(value = "/user/idp/register")
+    public Response<Void> isIdpRegister(@RequestBody IDPLoginDto dto) {
+        userService.registerIdp(dto);
+        return new Response<>(HttpStatus.OK, ResponseStatus.SUCCESS.getCode());
+    }
+
     @GetMapping(value = "/check/userId", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<Boolean> checkUserId(@Valid @RequestParam String userId) {
         Boolean result = userService.checkExistPlayer(userId);
-
         return new Response<>(result, HttpStatus.OK, SUCCESS);
     }
 
@@ -87,6 +97,19 @@ public class UserController {
 
         //login message
 //        kafkaProducer.sendMessage(member);
+
+        return new Response<>(member, HttpStatus.OK, SUCCESS);
+    }
+
+    @PostMapping(value = "/user/idp/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public Response<Member> getIdpMemberInfo(@Valid @RequestBody IDPLoginDto idpLoginDto) {
+
+        IdpUser idpUser = oAuthService.verifyIDPToken(idpLoginDto.getAccessToken(), idpLoginDto.getIdpType());
+
+        Member member = userService.loginIdp(idpUser.getIdpUserId(), idpUser.getIdpType());
+
+        //login message
+        // kafkaProducer.sendMessage(member);
 
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }
