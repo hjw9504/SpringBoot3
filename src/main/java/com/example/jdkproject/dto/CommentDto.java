@@ -4,24 +4,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @Builder
 public class CommentDto {
-    private int idx;
-    @JsonProperty(value = "posting_id")
+    @JsonProperty("posting_id")
     private int postingId;
-    @JsonProperty(value = "member_id")
-    private String memberId;
-    private String comment;
-    @JsonProperty(value = "register_time")
-    private String registerTime;
-    private MemberInfo member;
+    private List<CommentItem> comments;
 
     @Getter
     @Builder
-    public static class MemberInfo {
+    public static class CommentItem {
+        @JsonProperty("member_id")
         private String memberId;
-        private String name;
-        private String profileImage;
+        private String comment;
+        @JsonProperty("register_time")
+        private String registerTime;
     }
 }

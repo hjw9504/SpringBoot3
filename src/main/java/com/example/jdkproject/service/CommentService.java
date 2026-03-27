@@ -1,7 +1,9 @@
 package com.example.jdkproject.service;
 
 import com.example.jdkproject.dto.CommentDto;
+import com.example.jdkproject.entity.CommentResultProjection;
 import com.example.jdkproject.entity.PostingCommentVo;
+import com.example.jdkproject.entity.PostingLikesVo;
 import com.example.jdkproject.entity.PostingVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
@@ -11,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -20,6 +24,24 @@ public class CommentService {
 
     private final PostingRepository postingRepository;
     private final PostingCommentRepository postingCommentRepository;
+
+    public CommentDto getPostComment(int postingId) {
+        List<CommentResultProjection> projections = postingCommentRepository.findAllWithMemberInfo(postingId);
+        log.info("sadfsadf:{}", projections.get(0).getMemberId());
+
+        List<CommentDto.CommentItem> items = projections.stream()
+                .map(p -> CommentDto.CommentItem.builder()
+                        .memberId(p.getMemberId())
+                        .comment(p.getComment())
+                        .registerTime(p.getRegisterTime().toString())
+                        .build())
+                .collect(Collectors.toList());
+
+        return CommentDto.builder()
+                .postingId(postingId)
+                .comments(items)
+                .build();
+    }
 
     public void registerPostComment(int postingId, String memberId, String comment) {
 
