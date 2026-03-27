@@ -19,7 +19,7 @@ echo "[2/5] JAR 파일을 서버로 전송 중..."
 scp -i $PEM_PATH $JAR_FILE $EC2_USER@$EC2_IP:$SERVER_DIR/auth-server.jar
 
 echo "[3/5] 기존 서버 프로세스 종료 중..."
-ssh -i $PEM_PATH $EC2_USER@$EC2_IP "pgrep -f *.jar | xargs -r kill -9"
+ssh -i $PEM_PATH $EC2_USER@$EC2_IP "pgrep -f auth-server.jar | xargs -r kill -9"
 
 echo "[4/5] 새 버전 서버 실행 (nohup)..."
 ssh -i $PEM_PATH $EC2_USER@$EC2_IP "nohup java -Dspring.profiles.active=prod -jar $SERVER_DIR/auth-server.jar > $SERVER_DIR/nohup.out 2>&1 &"
