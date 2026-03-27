@@ -166,7 +166,7 @@ public class UserService {
             // put member jpa
             MemberVo memberVo = MemberVo.builder()
                     .memberId(memberId)
-                    .userId(memberId)
+                    .userId(idpUser.getIdpType() + RandomStringUtils.randomNumeric(10))
                     .userPw(UUID.randomUUID().toString())
                     .name(null)
                     .email(null)
