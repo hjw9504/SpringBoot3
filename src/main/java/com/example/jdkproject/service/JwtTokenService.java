@@ -49,7 +49,7 @@ public class JwtTokenService {
                 .claim("iss", "jungs.com")
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + tokenValidTime))
-                .signWith(privateKey)
+                .signWith(privateKey, Jwts.SIG.RS512)
                 .compact();
 
         // redis 등록

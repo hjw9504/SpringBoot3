@@ -373,7 +373,7 @@ public class UserService {
 
     public static KeyPair genRSAKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-        gen.initialize(1024, new SecureRandom());
+        gen.initialize(2048, new SecureRandom());
         return gen.genKeyPair();
     }
 
