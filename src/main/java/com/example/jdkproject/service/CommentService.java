@@ -27,7 +27,6 @@ public class CommentService {
 
     public CommentDto getPostComment(int postingId) {
         List<CommentResultProjection> projections = postingCommentRepository.findAllWithMemberInfo(postingId);
-        log.info("sadfsadf:{}", projections.get(0).getMemberId());
 
         List<CommentDto.CommentItem> items = projections.stream()
                 .map(p -> CommentDto.CommentItem.builder()
