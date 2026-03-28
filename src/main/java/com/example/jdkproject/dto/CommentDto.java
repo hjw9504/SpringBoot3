@@ -21,5 +21,6 @@ public class CommentDto {
         private String comment;
         @JsonProperty("register_time")
         private String registerTime;
+        private String profileImage;
     }
 }

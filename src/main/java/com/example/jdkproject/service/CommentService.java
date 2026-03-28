@@ -3,7 +3,6 @@ package com.example.jdkproject.service;
 import com.example.jdkproject.dto.CommentDto;
 import com.example.jdkproject.entity.CommentResultProjection;
 import com.example.jdkproject.entity.PostingCommentVo;
-import com.example.jdkproject.entity.PostingLikesVo;
 import com.example.jdkproject.entity.PostingVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
@@ -14,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +31,7 @@ public class CommentService {
                         .memberId(p.getMemberId())
                         .comment(p.getComment())
                         .registerTime(p.getRegisterTime().toString())
+                        .profileImage(p.getProfileImage())
                         .build())
                 .collect(Collectors.toList());
 

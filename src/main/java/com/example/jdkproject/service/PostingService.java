@@ -10,6 +10,7 @@ import com.example.jdkproject.entity.PostingVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.MemberRepository;
+import com.example.jdkproject.repository.PostingCommentRepository;
 import com.example.jdkproject.repository.PostingLikesRepository;
 import com.example.jdkproject.repository.PostingRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class PostingService {
     private final PostingRepository postingRepository;
     private final PostingLikesRepository postingLikesRepository;
     private final MemberRepository memberRepository;
+    private final PostingCommentRepository postingCommentRepository;
 
     public List<PostingDto> getAllPost(String memberId) {
         List<PostingResultProjection> postingVos = postingRepository.findAllPosting();
@@ -41,6 +43,7 @@ public class PostingService {
         return postingVos.stream().map(p -> {
             // memberId의 좋아요 기록 조회
             Optional<PostingLikesVo> postingLikesVo = postingLikesRepository.findByPostingIdAndMemberId(p.getId(), memberId);
+            long postingCount = postingCommentRepository.countByPostingId(p.getId());
 
             return PostingDto.builder()
                     .id(p.getId())
@@ -48,6 +51,7 @@ public class PostingService {
                     .body(p.getBody())
                     .likes(p.getLikes())
                     .registerTime(p.getRegisterTime())
+                    .commentCount((int) postingCount)
                     .member(PostingDto.MemberInfo.builder()
                             .memberId(p.getMemberId())
                             .name(p.getName())

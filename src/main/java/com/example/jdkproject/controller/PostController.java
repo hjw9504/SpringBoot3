@@ -55,13 +55,15 @@ public class PostController {
                                                                      @Valid @RequestParam String memberId) {
         try {
             // verify token
-            userService.verifyToken(token);
+            JtiInfo jtiInfo = userService.verifyToken(token);
+
+            List<PostingResultProjection> postingVos = postingService.getPostByMemberId(jtiInfo.getMemberId());
+            return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
+        } catch(CommonErrorException e) {
+            throw e;
         } catch(Exception e) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
-
-        List<PostingResultProjection> postingVos = postingService.getPostByMemberId(memberId);
-        return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
     }
 
     @GetMapping(value = "/posting/detail/{postingId}")

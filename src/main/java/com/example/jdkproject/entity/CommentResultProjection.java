@@ -7,4 +7,5 @@ public interface CommentResultProjection {
     String getMemberId();
     LocalDateTime getRegisterTime();
     String getUserId();
+    String getProfileImage();
 }
