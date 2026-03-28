@@ -126,4 +126,18 @@ public class PostController {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
+
+    @DeleteMapping("/posting/{postingId}")
+    public Response<Void> deletePostByPostingId(@RequestHeader String token,
+                                                @PathVariable int postingId) {
+        try {
+            JtiInfo info = userService.verifyToken(token);
+            postingService.deletePost(info.getMemberId(), postingId);
+            return new Response<>(HttpStatus.OK, SUCCESS);
+        } catch(CommonErrorException e) {
+            throw e;
+        } catch(Exception e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+    }
 }

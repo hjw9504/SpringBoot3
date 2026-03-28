@@ -137,4 +137,14 @@ public class PostingService {
             default -> throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
         }
     }
+
+    public void deletePost(String memberId, int postingId) {
+        PostingResultProjection postingVos = getPostByPostingId(postingId);
+
+        if (!postingVos.getMemberId().equals(memberId)) {
+            throw new CommonErrorException(ErrorStatus.WRONG_REQUEST);
+        }
+
+        postingRepository.deleteById((long) postingId);
+    }
 }
