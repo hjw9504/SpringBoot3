@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name = "kakaoOidcClient", url = "https://kapi.kakao.com")
 public interface KakaoOidcClient {
     @GetMapping(value = "/v1/oidc/userinfo", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    KakaoOIDCResponse getOidcResponse(@RequestHeader String authorization);
+    KakaoOIDCResponse getOidcResponse(@RequestHeader("Authorization") String authorization);
 }
 

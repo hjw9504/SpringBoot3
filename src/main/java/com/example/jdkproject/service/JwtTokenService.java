@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class JwtTokenService {
 
-    // 토큰 유효시간 30분
+    // 토큰 유효시간 60분
     private long tokenValidTime = 60 * 60 * 1000L;
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -42,21 +41,18 @@ public class JwtTokenService {
             log.error("Jti store error: ", e);
         }
 
-        Claims claims = Jwts.claims().setSubject(memberId); // JWT payload 에 저장되는 정보단위
-        claims.put("jti", jti); // 정보는 key / value 쌍으로 저장된다.
-        claims.put("iss", "jungs.com");
         Date now = new Date();
 
         String accessToken = Jwts.builder()
-                .setSubject(memberId)
-                .setClaims(claims) // 정보 저장
-                .setIssuedAt(now) // 토큰 발행 시간 정보
-                .setExpiration(new Date(now.getTime() + tokenValidTime)) // set Expire Time
-                .signWith(SignatureAlgorithm.RS512, privateKey)  // 사용할 암호화 알고리즘과
-                // signature 에 들어갈 secret값 세팅
+                .subject(memberId)
+                .claim("jti", jti)
+                .claim("iss", "jungs.com")
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + tokenValidTime))
+                .signWith(privateKey, Jwts.SIG.RS512)
                 .compact();
 
-        //redis 등록
+        // redis 등록
         saveToRedis(memberId, accessToken);
 
         return accessToken;
@@ -65,8 +61,11 @@ public class JwtTokenService {
     // 토큰의 유효성 + 만료일자 확인
     public boolean validateToken(String jwtToken, PublicKey publicKey) {
         try {
-            Jws<Claims> claims = Jwts.parser().setSigningKey(publicKey).parseClaimsJws(jwtToken);
-            return !claims.getBody().getExpiration().before(new Date());
+            Jws<Claims> claims = Jwts.parser()
+                    .verifyWith(publicKey)
+                    .build()
+                    .parseSignedClaims(jwtToken);
+            return !claims.getPayload().getExpiration().before(new Date());
         } catch (Exception e) {
             return false;
         }

@@ -1,18 +1,24 @@
 package com.example.jdkproject.service;
 
 import com.example.jdkproject.domain.Member;
+import com.example.jdkproject.dto.IDPLoginDto;
+import com.example.jdkproject.dto.IdpUser;
 import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.entity.MemberChannelVo;
 import com.example.jdkproject.entity.MemberSecureVo;
 import com.example.jdkproject.entity.MemberVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
+import com.example.jdkproject.repository.MemberChannelRepository;
 import com.example.jdkproject.repository.MemberRepository;
 import com.example.jdkproject.repository.MemberSecureRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -28,7 +34,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 
 @Slf4j
@@ -36,10 +41,14 @@ import java.util.*;
 @Service
 public class UserService {
     private final JwtTokenService jwtTokenService;
+    private final OAuthService oAuthService;
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
+    private final MemberChannelRepository memberChannelRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    private final static String PROFILE_IMAGE_PREFIX = "https://api.dicebear.com/7.x/lorelei/svg?seed=";
 
     public List<Member> checkId(String id, String memberId) {
         try {
@@ -54,33 +63,33 @@ public class UserService {
                     // email
                     String encEmail = memberVo.getEmail();
                     String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+                    Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
                     memberList.add(member);
                 }
                 return memberList;
             }
 
-            List<MemberVo> memberResult = memberRepository.findUserByMemberId(memberId);
-            if (memberResult == null && memberResult.size() == 0) {
-                return null;
-            }
+            MemberVo memberVo = memberRepository.findUserByMemberId(memberId)
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0))
+                    .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
 
-            MemberVo memberVo = memberResult.get(0);
             MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
 
             // email
             String encEmail = memberVo.getEmail();
-            String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole());
+            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
+            Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
             memberList.add(member);
             return memberList;
         } catch(Exception e) {
+            log.warn("Error while getting user info : ", e);
             return null;
         }
     }
 
     @Transactional
-    public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException, UnsupportedEncodingException, InvalidKeySpecException {
+    public void register(UserDto userDto) throws NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         // check user id
         Boolean isExistingUser = checkExistPlayer(userDto.getUserId());
         if (isExistingUser) {
@@ -115,32 +124,91 @@ public class UserService {
 
         //put user secure info jpa
         MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
-        Object result = memberSecureRepository.save(memberSecureVo);
-        if (result == null) {
-            log.error("DB Insert Error");
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        memberSecureRepository.save(memberSecureVo);
 
         userDto.setMemberId(memberId);
 
         log.info("Member: {}", userDto);
 
         // put member jpa
-        MemberVo memberVo = new MemberVo(memberId, userDto.getUserId(), userPw, userDto.getName(), userDto.getEmail(), userDto.getPhone(), userDto.getNickName(), LocalDateTime.now(ZoneOffset.UTC).toString(), null, "USER", null);
-        Object registerResult = memberRepository.save(memberVo);
-        if (registerResult == null) {
-            log.error("DB Insert Error");
+        MemberVo memberVo = MemberVo.builder()
+                .memberId(memberId)
+                .userId(userDto.getUserId())
+                .userPw(userPw)
+                .name(userDto.getName())
+                .email(userDto.getEmail())
+                .phone(userDto.getPhone())
+                .nickname(userDto.getNickName())
+                .registerTime(LocalDateTime.now())
+                .recentLoginTime(null)
+                .role("USER")
+                .profileImage(PROFILE_IMAGE_PREFIX + RandomStringUtils.randomAlphanumeric(10))
+                .updateNicknameTime(null)
+                .build();
+
+        memberRepository.save(memberVo);
+    }
+
+    @Transactional
+    public void registerIdp(IDPLoginDto dto) {
+        try {
+            // get user channel
+            IdpUser idpUser = oAuthService.verifyIDPToken(dto.getAccessToken(), dto.getIdpType());
+
+            Optional<MemberChannelVo> idpRegisterResult = memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUser.getIdpUserId(), idpUser.getIdpType());
+            if (idpRegisterResult.isPresent()) {
+                throw new CommonErrorException(ErrorStatus.ALREADY_EXIST);
+            }
+
+            //create user id
+            String memberId = UUID.randomUUID().toString();
+
+            // put member jpa
+            MemberVo memberVo = MemberVo.builder()
+                    .memberId(memberId)
+                    .userId(idpUser.getIdpType() + RandomStringUtils.randomNumeric(10))
+                    .userPw(UUID.randomUUID().toString())
+                    .name(null)
+                    .email(null)
+                    .phone(null)
+                    .nickname(idpUser.getIdpType() + " USER")
+                    .registerTime(LocalDateTime.now())
+                    .recentLoginTime(null)
+                    .role("USER")
+                    .profileImage(PROFILE_IMAGE_PREFIX + RandomStringUtils.randomAlphanumeric(10))
+                    .updateNicknameTime(null)
+                    .build();
+
+            memberRepository.save(memberVo);
+
+            KeyPair keyPair = genRSAKeyPair();
+            PublicKey publicKeyPair = keyPair.getPublic();
+
+            String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+            String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+            //put user secure info jpa
+            MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
+            memberSecureRepository.save(memberSecureVo);
+
+            MemberChannelVo memberChannelVo = MemberChannelVo.builder()
+                    .memberId(memberId)
+                    .idpUserId(idpUser.getIdpUserId())
+                    .idpType(idpUser.getIdpType())
+                    .registerTime(LocalDateTime.now())
+                    .build();
+
+            memberChannelRepository.save(memberChannelVo);
+        } catch (CommonErrorException e) {
+            throw e;
+        } catch (Exception e) {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
 
     public Boolean checkExistPlayer(String userId) {
         MemberVo member = memberRepository.findUserByUserId(userId);
-        if (member != null) {
-            return true;
-        }
-
-        return false;
+        return member != null;
     }
 
     public Member login(String userId, String userPw) throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, BadPaddingException, InvalidKeyException {
@@ -151,7 +219,7 @@ public class UserService {
         }
 
         //VO to DTO
-        Member member = new Member(memberVo.getMemberId(), userId, userPw, null, memberVo.getName(), memberVo.getEmail(), memberVo.getPhone(), memberVo.getNickname(), null, null, null, memberVo.getRole(), null);
+        Member member = new Member().toMember(memberVo, userId);
         log.info("Member: {}", member.getMemberId());
 
         String encPw = encrypt(userPw);
@@ -178,16 +246,49 @@ public class UserService {
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setToken(token);
 
-        int loginTimeResult = memberRepository.updateLastLoginTime(member.getMemberId(), LocalDateTime.now(ZoneOffset.UTC).toString());
-        if (loginTimeResult <= 0 ) {
-            log.warn("Login Time Update DB Error!");
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        memberVo.updateMemberLastLoginTime();
+        memberRepository.save(memberVo);
 
         return member;
     }
 
-    public void verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public Member loginIdp(String idpUserId, String idpType) {
+        Optional<MemberChannelVo> memberChannelResult = memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUserId, idpType);
+        if (memberChannelResult.isEmpty()) {
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        MemberChannelVo memberChannelVo = memberChannelResult.get();
+
+        // get member with member_id
+        MemberVo memberVo = memberRepository.findUserByMemberId(memberChannelVo.getMemberId())
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.get(0))
+                .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
+
+        //VO to DTO
+        Member member = new Member().toMember(memberVo, memberVo.getUserId());
+
+        //get member secure
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(member.getMemberId());
+
+        //jwt token
+        String token = null;
+        try {
+            token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+        }
+
+        member.setToken(token);
+
+        memberVo.updateMemberLastLoginTime();
+        memberRepository.save(memberVo);
+
+        return member;
+    }
+
+    public JtiInfo verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // token payload parse
         Map<String, String> claims = parsePayload(token);
 
@@ -210,14 +311,29 @@ public class UserService {
         if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
+
+        return jtiInfo;
     }
 
     public void resetPassword(String userId, String userPassword) {
         try {
             String userPw = encrypt(userPassword);
+
+            // 기존 password를 가져와서 동일한지 비교
+            MemberVo memberVo = memberRepository.findUserByUserId(userId);
+            if (memberVo == null) {
+                log.warn("User not Exist");
+                throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+            }
+
+            if (userPw.equals(memberVo.getUserPw())) {
+                throw new CommonErrorException(ErrorStatus.SAME_PASSWORD);
+            }
+
             int result = memberRepository.resetUserPassword(userId, userPw);
-            return;
-        } catch(Exception e) {
+        } catch (CommonErrorException e) {
+            throw e;
+        } catch (Exception e) {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
     }
@@ -229,7 +345,15 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        memberRepository.updateNickName(member.getMemberId(), member.getNickName());
+        // 최근 업데이트 확인
+        if (memberVo.getUpdateNicknameTime() != null && LocalDateTime.now().minusDays(1).isBefore(memberVo.getUpdateNicknameTime())) {
+            log.info("{} {}", LocalDateTime.now().minusDays(1), memberVo.getUpdateNicknameTime());
+            throw new CommonErrorException(ErrorStatus.CANNOT_UPDATE_NICKNAME);
+        }
+
+        memberVo.updateMemberNickname(member.getNickName());
+
+        memberRepository.save(memberVo);
     }
 
     private String encrypt(String text) throws NoSuchAlgorithmException {
@@ -249,7 +373,7 @@ public class UserService {
 
     public static KeyPair genRSAKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
-        gen.initialize(1024, new SecureRandom());
+        gen.initialize(2048, new SecureRandom());
         return gen.genKeyPair();
     }
 

@@ -9,4 +9,5 @@ public interface PostingResultProjection {
     String getRegisterTime();
     String getModTime();
     String getName();
+    long getLikes();
 }

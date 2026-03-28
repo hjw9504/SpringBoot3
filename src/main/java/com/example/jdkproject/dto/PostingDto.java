@@ -1,15 +1,26 @@
 package com.example.jdkproject.dto;
 
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 
-@Data
+@Getter
+@Builder
 public class PostingDto {
-    private String id;
-    private String memberId;
+    private int id;
     private String title;
     private String body;
-    private String profileImage;
+    private long likes;
     private String registerTime;
-    private String modTime;
-    private String token;
+    private int commentCount;
+    private MemberInfo member;
+
+    @Getter
+    @Builder
+    public static class MemberInfo {
+        private String memberId;
+        private String name;
+        private String profileImage;
+        @Builder.Default
+        private boolean isLikeTrue = false;
+    }
 }
