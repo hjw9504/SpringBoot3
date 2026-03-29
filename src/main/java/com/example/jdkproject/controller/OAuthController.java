@@ -1,10 +1,8 @@
 package com.example.jdkproject.controller;
 
-import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.IDPLoginDto;
 import com.example.jdkproject.dto.IdpUser;
-import com.example.jdkproject.entity.MemberChannelVo;
 import com.example.jdkproject.entity.OAuthVo;
 import com.example.jdkproject.enums.ResponseStatus;
 import com.example.jdkproject.exception.CommonErrorException;
@@ -15,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
-
-import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor

@@ -17,10 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -164,14 +162,16 @@ public class UserService {
             String memberId = UUID.randomUUID().toString();
 
             // put member jpa
+            String idpUserName = idpUser.getIdpType() + RandomStringUtils.randomNumeric(10);
+
             MemberVo memberVo = MemberVo.builder()
                     .memberId(memberId)
-                    .userId(idpUser.getIdpType() + RandomStringUtils.randomNumeric(10))
+                    .userId(idpUserName)
                     .userPw(UUID.randomUUID().toString())
-                    .name(null)
+                    .name(idpUserName)
                     .email(null)
                     .phone(null)
-                    .nickname(idpUser.getIdpType() + " USER")
+                    .nickname(idpUser.getIdpType().toUpperCase() + " USER")
                     .registerTime(LocalDateTime.now())
                     .recentLoginTime(null)
                     .role("USER")
@@ -421,11 +421,10 @@ public class UserService {
     }
 
     private String getRedisData(String key) {
-        final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        return valueOperations.get(key);
+        return redisTemplate.opsForValue().get(key);
     }
 
-    private Map<String, String> parsePayload(String token) {
+    private Map parsePayload(String token) {
         try {
             String[] parts = token.split("\\.");
             if (parts.length < 2) {
