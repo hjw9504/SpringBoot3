@@ -1,6 +1,7 @@
 package com.example.jdkproject.service;
 
 import com.example.jdkproject.dto.ChattingDto;
+import com.example.jdkproject.entity.ChatLogResultProjection;
 import com.example.jdkproject.entity.ChatLogVo;
 import com.example.jdkproject.entity.ChatRoomMemberVo;
 import com.example.jdkproject.entity.ChatRoomVo;
@@ -33,14 +34,14 @@ public class ChattingService {
         return chatRoomVo;
     }
 
-    public List<ChatLogVo> getChattingLog(long roomId, String memberId) {
-        List<ChatLogVo> chatLogVos = chatLogRepository.findByRoomId(roomId);
+    public List<ChatLogResultProjection> getChattingLog(long roomId, String memberId) {
+        List<ChatLogResultProjection> projections = chatLogRepository.findByRoomIdAndUserId(roomId);
 
         LocalDateTime roomEnterTime;
         Optional<ChatRoomMemberVo> roomMemberVo = chatRoomMemberRepository.findByRoomIdAndMemberId(roomId, memberId);
         roomEnterTime = roomMemberVo.map(ChatRoomMemberVo::getRegisterTime).orElse(null);
 
-        return chatLogVos.stream()
+        return projections.stream()
                 .filter(vo -> vo.getRegisterTime().isAfter(roomEnterTime))
                 .collect(Collectors.toList());
     }

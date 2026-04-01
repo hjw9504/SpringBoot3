@@ -3,6 +3,7 @@ package com.example.jdkproject.controller;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.ChattingDto;
 import com.example.jdkproject.dto.JtiInfo;
+import com.example.jdkproject.entity.ChatLogResultProjection;
 import com.example.jdkproject.entity.ChatLogVo;
 import com.example.jdkproject.entity.ChatRoomVo;
 import com.example.jdkproject.exception.CommonErrorException;
@@ -56,7 +57,7 @@ public class ChattingController {
     }
 
     @GetMapping(value = "/chat/message")
-    public Response<List<ChatLogVo>> getChattingList(@RequestHeader String token, @RequestParam(value = "room_id") long roomId) {
+    public Response<List<ChatLogResultProjection>> getChattingList(@RequestHeader String token, @RequestParam(value = "room_id") long roomId) {
         try {
             JtiInfo jtiInfo = userService.verifyToken(token);
             return new Response<>(chattingService.getChattingLog(roomId, jtiInfo.getMemberId()), HttpStatus.OK, SUCCESS);
