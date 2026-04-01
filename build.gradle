@@ -64,8 +64,14 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
     implementation 'org.apache.httpcomponents:httpcore:4.4.16'
 
+    // AI
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     // Commons
     implementation 'org.apache.commons:commons-lang3:3.14.0'
+
+    // Web Socket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
