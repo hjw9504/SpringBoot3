@@ -36,4 +36,5 @@ build/
 .gradle
 
 # 민감 정보 - git 제외
-src/main/resources/application-prod.properties
+src/main/resources/application-secret-dev.properties
+src/main/resources/application-secret-prod.properties
