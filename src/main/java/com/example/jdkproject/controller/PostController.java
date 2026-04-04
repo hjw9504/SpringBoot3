@@ -1,15 +1,15 @@
 package com.example.jdkproject.controller;
 
+import com.example.jdkproject.annotation.TokenCheck;
 import com.example.jdkproject.domain.Posting;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.PostingDto;
 import com.example.jdkproject.dto.PostingLikesDto;
 import com.example.jdkproject.entity.PostingResultProjection;
-import com.example.jdkproject.exception.CommonErrorException;
-import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.PostingService;
 import com.example.jdkproject.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -32,63 +32,37 @@ public class PostController {
         this.userService = userService;
     }
 
+    @TokenCheck
     @GetMapping(value = "/posting/all")
     public Response<List<PostingDto>> getAllPost(@Valid @RequestHeader String token,
                                                  @RequestParam(required = false) String memberId) {
-        try {
-            // verify token
-            userService.verifyToken(token);
 
-            List<PostingDto> postingVos = postingService.getAllPost(memberId);
-            return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
-        } catch(CommonErrorException e) {
-            log.warn("Get posting error : {}", e.getMessage());
-            throw e;
-        } catch(Exception e) {
-            log.warn("Get posting error : {}", e.getMessage());
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
+        List<PostingDto> postingVos = postingService.getAllPost(memberId);
+        return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @GetMapping(value = "/posting/list")
-    public Response<List<PostingResultProjection>> getPostByMemberId(@Valid @RequestHeader String token,
-                                                                     @Valid @RequestParam String memberId) {
-        try {
-            // verify token
-            JtiInfo jtiInfo = userService.verifyToken(token);
+    public Response<List<PostingResultProjection>> getPostByMemberId(HttpServletRequest request) {
 
-            List<PostingResultProjection> postingVos = postingService.getPostByMemberId(jtiInfo.getMemberId());
-            return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
-        } catch(CommonErrorException e) {
-            throw e;
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
+        JtiInfo jtiInfo = (JtiInfo) request.getAttribute("jtiInfo");
+        List<PostingResultProjection> postingVos = postingService.getPostByMemberId(jtiInfo.getMemberId());
+
+        return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @GetMapping(value = "/posting/detail/{postingId}")
-    public Response<PostingResultProjection> getPostByPostingId(@Valid @PathVariable int postingId,
-                                                               @Valid @RequestHeader String token) {
-        try {
-            // verify token
-            userService.verifyToken(token);
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
+    public Response<PostingResultProjection> getPostByPostingId(@Valid @PathVariable int postingId) {
 
         PostingResultProjection postingDetails = postingService.getPostByPostingId(postingId);
         return new Response<>(postingDetails, HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @PostMapping(value = "/posting/register")
     @ResponseBody
-    public Response<String> saveNewPosting(@Valid @RequestHeader String token, @Valid @RequestBody Posting posting) {
-        try {
-            userService.verifyToken(token);
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
-
+    public Response<String> saveNewPosting(@Valid @RequestBody Posting posting) {
         if (posting.getId() == 0) {
             // register
             postingService.saveNewPost(posting);
@@ -99,45 +73,33 @@ public class PostController {
         return new Response("success", HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @GetMapping("/posting/likes/{postingId}")
-    public Response<List<PostingLikesDto>> getPostLikesWithMemberId(@RequestHeader String token,
-                                                              @PathVariable int postingId) {
-        try {
-            JtiInfo info = userService.verifyToken(token);
-            return new Response<>(postingService.getPostLikes(postingId, info.getMemberId()), HttpStatus.OK, SUCCESS);
-        } catch(CommonErrorException e) {
-            throw e;
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+    public Response<List<PostingLikesDto>> getPostLikesWithMemberId(HttpServletRequest request,
+                                                                    @PathVariable int postingId) {
+
+        JtiInfo info = (JtiInfo) request.getAttribute("jtiInfo");
+        return new Response<>(postingService.getPostLikes(postingId, info.getMemberId()), HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @PostMapping("/posting/likes/{type}/{postingId}")
-    public Response<Void> updatePostingLikes(@RequestHeader String token,
+    public Response<Void> updatePostingLikes(HttpServletRequest request,
                                              @PathVariable String type,
                                              @PathVariable int postingId) {
-        try {
-            JtiInfo info = userService.verifyToken(token);
-            postingService.updatePostLikes(info.getMemberId(), postingId, type);
-            return new Response<>(HttpStatus.OK, SUCCESS);
-        } catch(CommonErrorException e) {
-            throw e;
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+
+        JtiInfo info = (JtiInfo) request.getAttribute("jtiInfo");
+        postingService.updatePostLikes(info.getMemberId(), postingId, type);
+        return new Response<>(HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @DeleteMapping("/posting/{postingId}")
-    public Response<Void> deletePostByPostingId(@RequestHeader String token,
+    public Response<Void> deletePostByPostingId(HttpServletRequest request,
                                                 @PathVariable int postingId) {
-        try {
-            JtiInfo info = userService.verifyToken(token);
-            postingService.deletePost(info.getMemberId(), postingId);
-            return new Response<>(HttpStatus.OK, SUCCESS);
-        } catch(CommonErrorException e) {
-            throw e;
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+
+        JtiInfo info = (JtiInfo) request.getAttribute("jtiInfo");
+        postingService.deletePost(info.getMemberId(), postingId);
+        return new Response<>(HttpStatus.OK, SUCCESS);
     }
 }

@@ -1,17 +1,16 @@
 package com.example.jdkproject.controller;
 
+import com.example.jdkproject.annotation.TokenCheck;
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.domain.Response;
-import com.example.jdkproject.dto.IDPLoginDto;
-import com.example.jdkproject.dto.IdpUser;
-import com.example.jdkproject.dto.LoginDto;
-import com.example.jdkproject.dto.UserDto;
+import com.example.jdkproject.dto.*;
 import com.example.jdkproject.enums.ResponseStatus;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.KafkaProducer;
 import com.example.jdkproject.service.OAuthService;
 import com.example.jdkproject.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,17 +52,14 @@ public class UserController {
         return "Code: "+code;
     }
 
+    @TokenCheck
     @GetMapping(value = "/user/info")
-    public Response<List<Member>> getInfo(@RequestHeader String token, @RequestParam(required = false) String id, @RequestParam(name = "member_id") String memberId) {
+    public Response<List<Member>> getInfo(HttpServletRequest request,
+                                          @RequestParam(required = false) String id) {
         log.info("User Info: {}", id);
 
-        try {
-            userService.verifyToken(token);
-        } catch(Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
-
-        List<Member> result = userService.checkId(id, memberId);
+        JtiInfo jtiInfo = (JtiInfo) request.getAttribute("jtiInfo");
+        List<Member> result = userService.checkId(id, jtiInfo.getMemberId());
         if (result == null) {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
@@ -114,15 +110,14 @@ public class UserController {
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @PostMapping(value = "/user/token/verify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response<String> verifyToken(@Valid @RequestHeader String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        userService.verifyToken(token);
-
-        return new Response("success", HttpStatus.OK, SUCCESS);
+    public Response<String> verifyToken() {
+        return new Response<>("success", HttpStatus.OK, SUCCESS);
     }
 
     @PostMapping(value = "/reset/password", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response resetPassword(@RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public Response resetPassword(@RequestBody Member member) {
         if (member.getUserId() == null || member.getNewUserPw() == null) {
             throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
         }
@@ -132,10 +127,9 @@ public class UserController {
         return new Response("success", HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @PostMapping(value = "/update/nickname", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response updateNickName(@RequestHeader String token, @RequestBody Member member) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        userService.verifyToken(token);
-
+    public Response updateNickName(@RequestBody Member member) {
         userService.updateNickName(member);
 
         return new Response<>("success", HttpStatus.OK, SUCCESS);
