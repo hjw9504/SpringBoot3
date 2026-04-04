@@ -19,6 +19,7 @@ public class PostingDto {
 
     @Getter
     @Builder
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class MemberInfo {
         private String memberId;
         private String name;
