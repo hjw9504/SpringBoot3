@@ -351,7 +351,7 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.CANNOT_UPDATE_NICKNAME);
         }
 
-        memberVo.updateMemberNickname(member.getNickName());
+        memberVo.updateMemberNickname(member.getNickname());
 
         memberRepository.save(memberVo);
     }

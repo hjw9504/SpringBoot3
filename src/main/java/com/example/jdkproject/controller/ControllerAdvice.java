@@ -36,4 +36,10 @@ public class ControllerAdvice {
         Response response = new Response(ErrorStatus.PARAMETER_NOT_FOUND);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Response> handleException(Exception e) {
+        Response response = new Response(ErrorStatus.SERVER_ERROR);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

@@ -25,7 +25,7 @@ public class Member {
     private String name;
     private String email;
     private String phone;
-    private String nickName;
+    private String nickname;
     private String token;
     private LocalDateTime registerTime;
     private LocalDateTime recentLoginTime;
@@ -33,12 +33,12 @@ public class Member {
     private String profileImage;
     private LocalDateTime updateNicknameTime;
 
-    public Member(String userId, String name, String email, String phone, String nickName, LocalDateTime registerTime, LocalDateTime recentLoginTime, String role, LocalDateTime updateNicknameTime, String profileImage) {
+    public Member(String userId, String name, String email, String phone, String nickname, LocalDateTime registerTime, LocalDateTime recentLoginTime, String role, LocalDateTime updateNicknameTime, String profileImage) {
         this.userId = userId;
         this.name = name;
         this.email = email;
         this.phone = phone;
-        this.nickName = nickName;
+        this.nickname = nickname;
         this.registerTime = registerTime;
         this.recentLoginTime = recentLoginTime;
         this.role = role;
@@ -53,7 +53,7 @@ public class Member {
                 .name(memberVo.getName())
                 .email(memberVo.getEmail())
                 .phone(memberVo.getPhone())
-                .nickName(memberVo.getNickname())
+                .nickname(memberVo.getNickname())
                 .role(memberVo.getRole())
                 .build();
     }
