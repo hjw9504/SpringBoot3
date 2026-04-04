@@ -19,6 +19,7 @@ public class CommentDto {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class CommentItem {
         private String memberId;
+        private String userId;
         private String comment;
         private String registerTime;
         private String profileImage;

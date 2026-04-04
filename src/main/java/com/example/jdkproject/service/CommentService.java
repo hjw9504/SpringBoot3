@@ -29,6 +29,7 @@ public class CommentService {
         List<CommentDto.CommentItem> items = projections.stream()
                 .map(p -> CommentDto.CommentItem.builder()
                         .memberId(p.getMemberId())
+                        .userId(p.getUserId())
                         .comment(p.getComment())
                         .registerTime(p.getRegisterTime().toString())
                         .profileImage(p.getProfileImage())
