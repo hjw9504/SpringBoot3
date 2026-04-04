@@ -81,7 +81,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/check/userId", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response<Boolean> checkUserId(@Valid @RequestParam String userId) {
+    public Response<Boolean> checkUserId(@Valid @RequestParam(value = "user_id") String userId) {
         Boolean result = userService.checkExistPlayer(userId);
         return new Response<>(result, HttpStatus.OK, SUCCESS);
     }

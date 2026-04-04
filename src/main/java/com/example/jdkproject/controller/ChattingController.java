@@ -32,7 +32,7 @@ public class ChattingController {
     @TokenCheck
     @GetMapping(value = "/chat/room")
     public Response<List<ChatRoomVo>> getChattingRoomList(HttpServletRequest request,
-                                                          @RequestParam(required = false) String memberId) {
+                                                          @RequestParam(required = false, value = "member_id") String memberId) {
 
         JtiInfo jtiInfo = (JtiInfo) request.getAttribute("jtiInfo");
         return new Response<>(chattingService.getChattingRoom(jtiInfo.getMemberId()), HttpStatus.OK, SUCCESS);

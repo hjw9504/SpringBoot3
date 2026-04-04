@@ -35,7 +35,7 @@ public class PostController {
     @TokenCheck
     @GetMapping(value = "/posting/all")
     public Response<List<PostingDto>> getAllPost(@Valid @RequestHeader String token,
-                                                 @RequestParam(required = false) String memberId) {
+                                                 @RequestParam(required = false, value = "member_id") String memberId) {
 
         List<PostingDto> postingVos = postingService.getAllPost(memberId);
         return new Response<>(postingVos, HttpStatus.OK, SUCCESS);
