@@ -44,6 +44,7 @@ jobs:
             echo "Successfully connected to EC2!"
             
             # 1. 프로젝트 폴더로 이동 (본인의 경로에 맞게 수정)
+            cd ~/
             
             # 2. 배포 스크립트에 실행 권한 부여
             chmod +x deploy-spring.sh
