@@ -6,8 +6,6 @@ import com.example.jdkproject.dto.ChattingDto;
 import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.entity.ChatLogResultProjection;
 import com.example.jdkproject.entity.ChatRoomVo;
-import com.example.jdkproject.exception.CommonErrorException;
-import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.ChattingService;
 import com.example.jdkproject.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +45,7 @@ public class ChattingController {
         return new Response<>(HttpStatus.OK, SUCCESS);
     }
 
+    @TokenCheck
     @GetMapping(value = "/chat/message")
     public Response<List<ChatLogResultProjection>> getChattingList(HttpServletRequest request,
                                                                    @RequestParam(value = "room_id") long roomId) {
