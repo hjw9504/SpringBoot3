@@ -16,6 +16,7 @@ public class CommentDto {
 
     @Getter
     @Builder
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class CommentItem {
         private String memberId;
         private String comment;
