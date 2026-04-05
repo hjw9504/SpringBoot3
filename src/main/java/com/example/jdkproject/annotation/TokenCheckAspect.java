@@ -28,7 +28,7 @@ public class TokenCheckAspect {
         try {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
                     .currentRequestAttributes()).getRequest();
-            String token = request.getHeader("token");
+            String token = request.getHeader("access_token");
 
             JtiInfo jtiInfo = userService.verifyToken(token);
             request.setAttribute("jtiInfo", jtiInfo);

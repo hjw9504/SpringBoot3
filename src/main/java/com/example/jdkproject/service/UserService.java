@@ -244,7 +244,7 @@ public class UserService {
 
         //jwt token
         String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-        member.setToken(token);
+        member.setAccessToken(token);
 
         memberVo.updateMemberLastLoginTime();
         memberRepository.save(memberVo);
@@ -280,7 +280,7 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }
 
-        member.setToken(token);
+        member.setAccessToken(token);
 
         memberVo.updateMemberLastLoginTime();
         memberRepository.save(memberVo);

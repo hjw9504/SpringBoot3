@@ -110,12 +110,6 @@ public class UserController {
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }
 
-    @TokenCheck
-    @PostMapping(value = "/user/token/verify", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public Response<String> verifyToken() {
-        return new Response<>("success", HttpStatus.OK, SUCCESS);
-    }
-
     @PostMapping(value = "/reset/password", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response resetPassword(@RequestBody Member member) {
         if (member.getUserId() == null || member.getNewUserPw() == null) {

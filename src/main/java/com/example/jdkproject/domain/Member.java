@@ -23,7 +23,8 @@ public class Member {
     private String email;
     private String phone;
     private String nickname;
-    private String token;
+    private String accessToken;
+    private String refreshToken;
     private LocalDateTime registerTime;
     private LocalDateTime recentLoginTime;
     private String role;
