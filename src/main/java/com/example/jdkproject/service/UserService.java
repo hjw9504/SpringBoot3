@@ -29,8 +29,6 @@ import javax.crypto.NoSuchPaddingException;
 import java.io.UnsupportedEncodingException;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -60,7 +58,7 @@ public class UserService {
 
                     // email
                     String encEmail = memberVo.getEmail();
-                    String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+                    String email = decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
                     Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
                     memberList.add(member);
                 }
@@ -76,7 +74,7 @@ public class UserService {
 
             // email
             String encEmail = memberVo.getEmail();
-            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
+            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
             Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
             memberList.add(member);
             return memberList;
@@ -232,19 +230,22 @@ public class UserService {
 
         // email
         String encEmail = member.getEmail();
-        String email = decryptRSA(encEmail, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        String email = decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setEmail(email);
 
         //phone number
         String encPhoneNumber = member.getPhone();
         if (encPhoneNumber != null) {
-            String phoneNumber = decryptRSA(encPhoneNumber, getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            String phoneNumber = decryptRSA(encPhoneNumber, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
             member.setPhone(phoneNumber);
         }
 
         //jwt token
-        String token = jwtTokenService.createAccessToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        String token = jwtTokenService.createAccessToken(member, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setAccessToken(token);
+
+        String refreshToken = jwtTokenService.createRefreshToken(member);
+        member.setRefreshToken(refreshToken);
 
         memberVo.updateMemberLastLoginTime();
         memberRepository.save(memberVo);
@@ -274,13 +275,12 @@ public class UserService {
 
         //jwt token
         String token = null;
-        try {
-            token = jwtTokenService.createAccessToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
-        }
+        token = jwtTokenService.createAccessToken(member, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
 
         member.setAccessToken(token);
+
+        String refreshToken = jwtTokenService.createRefreshToken(member);
+        member.setRefreshToken(refreshToken);
 
         memberVo.updateMemberLastLoginTime();
         memberRepository.save(memberVo);
@@ -288,7 +288,7 @@ public class UserService {
         return member;
     }
 
-    public JtiInfo verifyToken(String token) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public JtiInfo verifyToken(String token) {
         // token payload parse
         Map<String, String> claims = parsePayload(token);
 
@@ -308,10 +308,7 @@ public class UserService {
             throw new CommonErrorException(ErrorStatus.NOT_FOUND);
         }
 
-        if (!jwtTokenService.validateToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()))) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
-
+        jwtTokenService.validateAccessToken(token, JwtTokenService.getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()));
         return jtiInfo;
     }
 
@@ -402,22 +399,6 @@ public class UserService {
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] bytePlain = cipher.doFinal(byteEncrypted);
         return new String(bytePlain, "utf-8");
-    }
-
-    public static PublicKey getPublicKeyFromBase64Encrypted(String base64PublicKey)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] decodedBase64PubKey = Base64.getDecoder().decode(base64PublicKey);
-
-        return KeyFactory.getInstance("RSA")
-                .generatePublic(new X509EncodedKeySpec(decodedBase64PubKey));
-    }
-
-    public static PrivateKey getPrivateKeyFromBase64Encrypted(String base64PrivateKey)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] decodedBase64PrivateKey = Base64.getDecoder().decode(base64PrivateKey);
-
-        return KeyFactory.getInstance("RSA")
-                .generatePrivate(new PKCS8EncodedKeySpec(decodedBase64PrivateKey));
     }
 
     private String getRedisData(String key) {

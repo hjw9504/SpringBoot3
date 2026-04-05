@@ -70,7 +70,6 @@ public class UserController {
     @PostMapping(value = "/user/register", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<String> registInfo(@Valid @RequestBody UserDto userDto) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, BadPaddingException, InvalidKeySpecException, InvalidKeyException {
         userService.register(userDto);
-
         return new Response<>("success", HttpStatus.OK, SUCCESS);
     }
 
