@@ -29,7 +29,7 @@ public class JwtTokenService {
     private final ObjectMapper objectMapper;
 
     // JWT 토큰 생성
-    public String createToken(String memberId, String name, String email, PrivateKey privateKey) {
+    public String createAccessToken(String memberId, String name, String email, PrivateKey privateKey) {
 
         String jti = createJti();
         JtiInfo jtiInfo = getJtiInfo(memberId, name, email);

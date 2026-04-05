@@ -58,7 +58,7 @@ public class OAuthService {
             case "kakao":
                 KakaoOAuthResponse response = getKakaoTokenResponse(oAuthVo, code);
                 IDPLoginDto tokenResponse = IDPLoginDto.builder()
-                        .accessToken(response.getAccess_token())
+                        .idpToken(response.getAccess_token())
                         .idToken(response.getId_token())
                         .idpType(oAuthVo.getIdpType())
                         .build();
@@ -67,7 +67,7 @@ public class OAuthService {
             case "oauth2":
                 KakaoOAuthResponse res = getOAuth2TokenResponse(oAuthVo, code);
                 IDPLoginDto tokenRes = IDPLoginDto.builder()
-                        .accessToken(res.getAccess_token())
+                        .idpToken(res.getAccess_token())
                         .idToken(res.getId_token())
                         .idpType(oAuthVo.getIdpType())
                         .build();
@@ -95,7 +95,7 @@ public class OAuthService {
 
     public Optional<MemberChannelVo> getIdpRegisterResult(IDPLoginDto dto) {
         if ("kakao".equals(dto.getIdpType())) {
-            IdpUser idpUser = verifyIDPToken(dto.getAccessToken(), dto.getIdpType());
+            IdpUser idpUser = verifyIDPToken(dto.getIdpToken(), dto.getIdpType());
             return memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUser.getIdpUserId(), idpUser.getIdpType());
         }
         throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);

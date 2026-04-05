@@ -243,7 +243,7 @@ public class UserService {
         }
 
         //jwt token
-        String token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        String token = jwtTokenService.createAccessToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setAccessToken(token);
 
         memberVo.updateMemberLastLoginTime();
@@ -275,7 +275,7 @@ public class UserService {
         //jwt token
         String token = null;
         try {
-            token = jwtTokenService.createToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            token = jwtTokenService.createAccessToken(member.getMemberId(), member.getName(), member.getEmail(), getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
         }

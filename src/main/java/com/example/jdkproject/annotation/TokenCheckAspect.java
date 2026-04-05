@@ -11,6 +11,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -28,9 +29,13 @@ public class TokenCheckAspect {
         try {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
                     .currentRequestAttributes()).getRequest();
-            String token = request.getHeader("access_token");
+            String token = request.getHeader("Authorization");
 
-            JtiInfo jtiInfo = userService.verifyToken(token);
+            if (!StringUtils.hasText(token) || !token.startsWith("Bearer ")) {
+                throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
+            }
+
+            JtiInfo jtiInfo = userService.verifyToken(token.substring(7));
             request.setAttribute("jtiInfo", jtiInfo);
             return joinPoint.proceed();
         } catch (CommonErrorException e) {

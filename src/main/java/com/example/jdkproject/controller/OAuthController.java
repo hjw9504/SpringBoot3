@@ -48,7 +48,7 @@ public class OAuthController {
             IDPLoginDto response = oAuthService.getIdToken(oAuthVo, code);
 
             // register 결과 가져오기
-            return new RedirectView("http://54.180.225.237/idp/result?access_token="+response.getAccessToken()+"&idp_type="+response.getIdpType());
+            return new RedirectView("http://54.180.225.237/idp/result?access_token="+response.getIdpToken()+"&idp_type="+response.getIdpType());
         } catch (CommonErrorException e) {
             throw e;
         } catch (Exception e) {
@@ -59,7 +59,7 @@ public class OAuthController {
     @PostMapping(value = "/token/verify/{idpType}")
     @ResponseBody
     public Response<IdpUser> verifyAccessToken(@RequestBody IDPLoginDto dto, @PathVariable String idpType) {
-        IdpUser user = oAuthService.verifyIDPToken(dto.getAccessToken(), idpType);
+        IdpUser user = oAuthService.verifyIDPToken(dto.getIdpToken(), idpType);
         return new Response<>(user, HttpStatus.OK, ResponseStatus.SUCCESS.getCode());
     }
 
