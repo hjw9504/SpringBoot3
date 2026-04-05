@@ -58,7 +58,7 @@ public class UserService {
 
                     // email
                     String encEmail = memberVo.getEmail();
-                    String email = decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+                    String email = decryptRSA(encEmail, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
                     Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
                     memberList.add(member);
                 }
@@ -67,14 +67,14 @@ public class UserService {
 
             MemberVo memberVo = memberRepository.findUserByMemberId(memberId)
                     .filter(list -> !list.isEmpty())
-                    .map(list -> list.get(0))
+                    .map(List::getFirst)
                     .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
 
             MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberVo.getMemberId());
 
             // email
             String encEmail = memberVo.getEmail();
-            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
+            String email = StringUtils.isNotBlank(encEmail) ? decryptRSA(encEmail, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey())) : null;
             Member member = new Member(memberVo.getUserId(), memberVo.getName(), email, memberVo.getPhone(), memberVo.getNickname(), memberVo.getRegisterTime(), memberVo.getRecentLoginTime(), memberVo.getRole(), memberVo.getUpdateNicknameTime(), memberVo.getProfileImage());
             memberList.add(member);
             return memberList;
@@ -230,18 +230,18 @@ public class UserService {
 
         // email
         String encEmail = member.getEmail();
-        String email = decryptRSA(encEmail, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        String email = decryptRSA(encEmail, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setEmail(email);
 
         //phone number
         String encPhoneNumber = member.getPhone();
         if (encPhoneNumber != null) {
-            String phoneNumber = decryptRSA(encPhoneNumber, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+            String phoneNumber = decryptRSA(encPhoneNumber, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
             member.setPhone(phoneNumber);
         }
 
         //jwt token
-        String token = jwtTokenService.createAccessToken(member, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        String token = jwtTokenService.createAccessToken(member, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
         member.setAccessToken(token);
 
         String refreshToken = jwtTokenService.createRefreshToken(member);
@@ -264,7 +264,7 @@ public class UserService {
         // get member with member_id
         MemberVo memberVo = memberRepository.findUserByMemberId(memberChannelVo.getMemberId())
                 .filter(list -> !list.isEmpty())
-                .map(list -> list.get(0))
+                .map(List::getFirst)
                 .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
 
         //VO to DTO
@@ -275,7 +275,7 @@ public class UserService {
 
         //jwt token
         String token = null;
-        token = jwtTokenService.createAccessToken(member, JwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
+        token = jwtTokenService.createAccessToken(member, jwtTokenService.getPrivateKeyFromBase64Encrypted(memberSecureInfo.getPrivateKey()));
 
         member.setAccessToken(token);
 
@@ -286,30 +286,6 @@ public class UserService {
         memberRepository.save(memberVo);
 
         return member;
-    }
-
-    public JtiInfo verifyToken(String token) {
-        // token payload parse
-        Map<String, String> claims = parsePayload(token);
-
-        // get jti and info from redis
-        JtiInfo jtiInfo;
-        try {
-            String jti = claims.get("jti");
-            jtiInfo = objectMapper.readValue(getRedisData(jti), JtiInfo.class);
-        } catch (Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
-
-        String memberId = jtiInfo.getMemberId();
-
-        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
-        if (memberSecureInfo == null) {
-            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
-        }
-
-        jwtTokenService.validateAccessToken(token, JwtTokenService.getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()));
-        return jtiInfo;
     }
 
     public void resetPassword(String userId, String userPassword) {
@@ -399,24 +375,5 @@ public class UserService {
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] bytePlain = cipher.doFinal(byteEncrypted);
         return new String(bytePlain, "utf-8");
-    }
-
-    private String getRedisData(String key) {
-        return redisTemplate.opsForValue().get(key);
-    }
-
-    private Map parsePayload(String token) {
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
-            }
-
-            // payload 부분 Base64 디코딩
-            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
-            return objectMapper.readValue(payloadJson, Map.class);
-        } catch (Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
-        }
     }
 }

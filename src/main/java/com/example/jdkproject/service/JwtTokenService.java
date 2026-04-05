@@ -16,7 +16,6 @@ import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.*;
@@ -25,13 +24,13 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class JwtTokenService {
 
-    private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
@@ -56,7 +55,7 @@ public class JwtTokenService {
 
         Date now = new Date();
 
-        return Jwts.builder()
+        String accessToken = Jwts.builder()
                 .subject(member.getMemberId())
                 .claim("jti", jti)
                 .claim("iss", "jungs.com")
@@ -64,6 +63,10 @@ public class JwtTokenService {
                 .expiration(new Date(now.getTime() + accessTokenTtl))
                 .signWith(privateKey, Jwts.SIG.RS512)
                 .compact();
+
+        redisService.saveToRedis(member.getMemberId(), accessToken, accessTokenTtl);
+
+        return accessToken;
     }
 
     public String createRefreshToken(Member member) {
@@ -109,6 +112,30 @@ public class JwtTokenService {
         }
     }
 
+    public JtiInfo verifyToken(String token) {
+        // token payload parse
+        Map<String, String> claims = parsePayload(token);
+
+        // get jti and info from redis
+        JtiInfo jtiInfo;
+        try {
+            String jti = claims.get("jti");
+            jtiInfo = objectMapper.readValue(redisService.getFromRedis(jti).toString(), JtiInfo.class);
+        } catch (Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
+        }
+
+        String memberId = jtiInfo.getMemberId();
+
+        MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
+        if (memberSecureInfo == null) {
+            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
+        }
+
+        validateAccessToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()));
+        return jtiInfo;
+    }
+
     // 토큰의 유효성 + 만료일자 확인
     public void validateAccessToken(String jwtToken, PublicKey publicKey) {
         Jws<Claims> claims = Jwts.parser()
@@ -116,12 +143,13 @@ public class JwtTokenService {
                 .build()
                 .parseSignedClaims(jwtToken);
 
-        if (!claims.getPayload().getExpiration().before(new Date())) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
+        if (claims.getPayload().getExpiration().before(new Date())) {
+            throw new CommonErrorException(ErrorStatus.EXPIRED_TOKEN);
         }
 
         // sub 값이랑 token이 일치하는지 체크
         String accessTokenFromRedis = (String) redisService.getFromRedis(claims.getPayload().getSubject());
+
         if (!jwtToken.equals(accessTokenFromRedis)) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
@@ -138,7 +166,7 @@ public class JwtTokenService {
         return getNewAccessTokenAndRefreshToken(memberId, refreshTokenKey);
     }
 
-    public static PublicKey getPublicKeyFromBase64Encrypted(String base64PublicKey) {
+    public PublicKey getPublicKeyFromBase64Encrypted(String base64PublicKey) {
         try {
             byte[] decodedBase64PubKey = Base64.getDecoder().decode(base64PublicKey);
 
@@ -149,7 +177,7 @@ public class JwtTokenService {
         }
     }
 
-    public static PrivateKey getPrivateKeyFromBase64Encrypted(String base64PrivateKey) {
+    public PrivateKey getPrivateKeyFromBase64Encrypted(String base64PrivateKey) {
         try {
             byte[] decodedBase64PrivateKey = Base64.getDecoder().decode(base64PrivateKey);
 
@@ -170,5 +198,20 @@ public class JwtTokenService {
                 .name(name)
                 .email(email)
                 .build();
+    }
+
+    private Map parsePayload(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+            }
+
+            // payload 부분 Base64 디코딩
+            String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+            return objectMapper.readValue(payloadJson, Map.class);
+        } catch (Exception e) {
+            throw new CommonErrorException(ErrorStatus.TOKEN_PARSE_ERROR);
+        }
     }
 }

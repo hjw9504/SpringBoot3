@@ -3,13 +3,14 @@ package com.example.jdkproject.annotation;
 import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
-import com.example.jdkproject.service.UserService;
+import com.example.jdkproject.service.JwtTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -21,21 +22,20 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Slf4j
 public class TokenCheckAspect {
 
-    private final UserService userService;
+    private final JwtTokenService jwtTokenService;
 
-    // @MyLog 어노테이션이 붙은 메소드 실행 전후에 동작
     @Around("@annotation(tokenCheck)")
     public Object tokenCheck(ProceedingJoinPoint joinPoint, TokenCheck tokenCheck) throws Throwable {
         try {
             HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
                     .currentRequestAttributes()).getRequest();
-            String token = request.getHeader("Authorization");
+            String token = request.getHeader(HttpHeaders.AUTHORIZATION);
 
             if (!StringUtils.hasText(token) || !token.startsWith("Bearer ")) {
                 throw new CommonErrorException(ErrorStatus.PARAMETER_NOT_FOUND);
             }
 
-            JtiInfo jtiInfo = userService.verifyToken(token.substring(7));
+            JtiInfo jtiInfo = jwtTokenService.verifyToken(token.substring(7));
             request.setAttribute("jtiInfo", jtiInfo);
             return joinPoint.proceed();
         } catch (CommonErrorException e) {
