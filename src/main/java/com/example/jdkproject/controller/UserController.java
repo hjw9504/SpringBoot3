@@ -100,7 +100,7 @@ public class UserController {
     @PostMapping(value = "/user/idp/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<Member> getIdpMemberInfo(@Valid @RequestBody IDPLoginDto idpLoginDto) {
 
-        IdpUser idpUser = oAuthService.verifyIDPToken(idpLoginDto.getAccessToken(), idpLoginDto.getIdpType());
+        IdpUser idpUser = oAuthService.verifyIDPToken(idpLoginDto.getIdpToken(), idpLoginDto.getIdpType());
 
         Member member = userService.loginIdp(idpUser.getIdpUserId(), idpUser.getIdpType());
 

@@ -151,7 +151,7 @@ public class UserService {
     public void registerIdp(IDPLoginDto dto) {
         try {
             // get user channel
-            IdpUser idpUser = oAuthService.verifyIDPToken(dto.getAccessToken(), dto.getIdpType());
+            IdpUser idpUser = oAuthService.verifyIDPToken(dto.getIdpToken(), dto.getIdpType());
 
             Optional<MemberChannelVo> idpRegisterResult = memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUser.getIdpUserId(), idpUser.getIdpType());
             if (idpRegisterResult.isPresent()) {
