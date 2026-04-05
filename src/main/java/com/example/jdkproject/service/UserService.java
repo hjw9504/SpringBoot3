@@ -162,12 +162,29 @@ public class UserService {
             // put member jpa
             String idpUserName = idpUser.getIdpType() + RandomStringUtils.randomNumeric(10);
 
+            KeyPair keyPair = genRSAKeyPair();
+            PublicKey publicKeyPair = keyPair.getPublic();
+
+            String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+            String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+
+            String encEmail = null;
+
+            if (StringUtils.isNotBlank(dto.getEmail())) {
+                encEmail = encryptRSA(dto.getEmail(), publicKeyPair);
+                dto.setEmail(encEmail);
+            }
+
+            //put user secure info jpa
+            MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
+            memberSecureRepository.save(memberSecureVo);
+
             MemberVo memberVo = MemberVo.builder()
                     .memberId(memberId)
                     .userId(idpUserName)
                     .userPw(UUID.randomUUID().toString())
-                    .name(idpUserName)
-                    .email(null)
+                    .name(dto.getName())
+                    .email(encEmail)
                     .phone(null)
                     .nickname(idpUser.getIdpType().toUpperCase() + " USER")
                     .registerTime(LocalDateTime.now())
@@ -178,15 +195,6 @@ public class UserService {
                     .build();
 
             memberRepository.save(memberVo);
-
-            KeyPair keyPair = genRSAKeyPair();
-            PublicKey publicKeyPair = keyPair.getPublic();
-
-            String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
-            String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
-
-            //put user secure info jpa
-            MemberSecureVo memberSecureVo = new MemberSecureVo(memberId, privateKey, publicKey);
             memberSecureRepository.save(memberSecureVo);
 
             MemberChannelVo memberChannelVo = MemberChannelVo.builder()

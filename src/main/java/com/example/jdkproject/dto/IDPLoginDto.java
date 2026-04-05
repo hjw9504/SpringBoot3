@@ -9,4 +9,7 @@ public class IDPLoginDto {
     private String idpToken;
     private String idToken;
     private String idpType;
+
+    private String name;
+    private String email;
 }
