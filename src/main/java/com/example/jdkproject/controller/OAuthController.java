@@ -48,7 +48,7 @@ public class OAuthController {
             IDPLoginDto response = oAuthService.getIdToken(oAuthVo, code);
 
             // register 결과 가져오기
-            return new RedirectView("http://54.180.225.237/idp/result?access_token="+response.getIdpToken()+"&idp_type="+response.getIdpType());
+            return new RedirectView("http://54.180.225.237/idp/result?idp_token="+response.getIdpToken()+"&idp_type="+response.getIdpType());
         } catch (CommonErrorException e) {
             throw e;
         } catch (Exception e) {
