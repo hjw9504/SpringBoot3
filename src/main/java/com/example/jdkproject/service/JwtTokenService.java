@@ -44,14 +44,7 @@ public class JwtTokenService {
     public String createAccessToken(Member member, PrivateKey privateKey) {
 
         String jti = createJti();
-        JtiInfo jtiInfo = getJtiInfo(member.getMemberId(), member.getName(), member.getEmail());
-
-        try {
-            String jtiString = objectMapper.writeValueAsString(jtiInfo);
-            redisService.saveToRedis(jti, jtiString, accessTokenTtl);
-        } catch (Exception e) {
-            log.error("Jti store error: ", e);
-        }
+        String key = "auth:at:" + member.getMemberId();
 
         Date now = new Date();
 
@@ -64,7 +57,8 @@ public class JwtTokenService {
                 .signWith(privateKey, Jwts.SIG.RS512)
                 .compact();
 
-        redisService.saveToRedis(member.getMemberId(), accessToken, accessTokenTtl);
+        redisService.saveToRedis(jti, member.getMemberId(), accessTokenTtl);
+        redisService.saveListToRedis(key, accessToken, accessTokenTtl);
 
         return accessToken;
     }
@@ -117,15 +111,15 @@ public class JwtTokenService {
         Map<String, String> claims = parsePayload(token);
 
         // get jti and info from redis
-        JtiInfo jtiInfo;
-        try {
-            String jti = claims.get("jti");
-            jtiInfo = objectMapper.readValue(redisService.getFromRedis(jti).toString(), JtiInfo.class);
-        } catch (Exception e) {
+        String jti = claims.get("jti");
+        String memberId = redisService.getFromRedis(jti).toString();
+        String key = "auth:at:" + memberId;
+
+        // token 조회 (최근 허용 토큰 체크)
+        List<String> tokenList = redisService.getListFromRedis(key);
+        if (tokenList.isEmpty() || !tokenList.contains(token)) {
             throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
-
-        String memberId = jtiInfo.getMemberId();
 
         MemberSecureVo memberSecureInfo = memberSecureRepository.findInfoByMemberId(memberId);
         if (memberSecureInfo == null) {
@@ -133,7 +127,10 @@ public class JwtTokenService {
         }
 
         validateAccessToken(token, getPublicKeyFromBase64Encrypted(memberSecureInfo.getPublicKey()));
-        return jtiInfo;
+
+        return JtiInfo.builder()
+                .memberId(memberId)
+                .build();
     }
 
     // 토큰의 유효성 + 만료일자 확인
@@ -145,13 +142,6 @@ public class JwtTokenService {
 
         if (claims.getPayload().getExpiration().before(new Date())) {
             throw new CommonErrorException(ErrorStatus.EXPIRED_TOKEN);
-        }
-
-        // sub 값이랑 token이 일치하는지 체크
-        String accessTokenFromRedis = (String) redisService.getFromRedis(claims.getPayload().getSubject());
-
-        if (!jwtToken.equals(accessTokenFromRedis)) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
     }
 
@@ -190,14 +180,6 @@ public class JwtTokenService {
 
     private String createJti() {
         return RandomStringUtils.randomAlphanumeric(20);
-    }
-
-    private JtiInfo getJtiInfo(String memberId, String name, String email) {
-        return JtiInfo.builder()
-                .memberId(memberId)
-                .name(name)
-                .email(email)
-                .build();
     }
 
     private Map parsePayload(String token) {
