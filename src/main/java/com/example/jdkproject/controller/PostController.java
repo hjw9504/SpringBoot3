@@ -21,6 +21,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @Validated
+@RequestMapping("/posting")
 public class PostController {
     private final static int SUCCESS = 0;
 
@@ -33,7 +34,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @GetMapping(value = "/posting/all")
+    @GetMapping(value = "/all")
     public Response<List<PostingDto>> getAllPost(HttpServletRequest request,
                                                  @RequestParam(required = false, value = "member_id") String memberId) {
 
@@ -42,7 +43,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @GetMapping(value = "/posting/list")
+    @GetMapping(value = "/list")
     public Response<List<PostingResultProjection>> getPostByMemberId(HttpServletRequest request) {
 
         JtiInfo jtiInfo = (JtiInfo) request.getAttribute("jtiInfo");
@@ -52,7 +53,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @GetMapping(value = "/posting/detail/{postingId}")
+    @GetMapping(value = "/detail/{postingId}")
     public Response<PostingResultProjection> getPostByPostingId(@Valid @PathVariable int postingId) {
 
         PostingResultProjection postingDetails = postingService.getPostByPostingId(postingId);
@@ -60,7 +61,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @PostMapping(value = "/posting/register")
+    @PostMapping(value = "/register")
     @ResponseBody
     public Response<String> saveNewPosting(@Valid @RequestBody Posting posting) {
         if (posting.getId() == 0) {
@@ -74,7 +75,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @GetMapping("/posting/likes/{postingId}")
+    @GetMapping("/likes/{postingId}")
     public Response<List<PostingLikesDto>> getPostLikesWithMemberId(HttpServletRequest request,
                                                                     @PathVariable int postingId) {
 
@@ -83,7 +84,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @PostMapping("/posting/likes/{type}/{postingId}")
+    @PostMapping("/likes/{type}/{postingId}")
     public Response<Void> updatePostingLikes(HttpServletRequest request,
                                              @PathVariable String type,
                                              @PathVariable int postingId) {
@@ -94,7 +95,7 @@ public class PostController {
     }
 
     @TokenCheck
-    @DeleteMapping("/posting/{postingId}")
+    @DeleteMapping("/{postingId}")
     public Response<Void> deletePostByPostingId(HttpServletRequest request,
                                                 @PathVariable int postingId) {
 

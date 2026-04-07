@@ -33,6 +33,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequiredArgsConstructor
 @Validated
+@RequestMapping("/user")
 public class UserController {
     private final UserService userService;
     private final OAuthService oAuthService;
@@ -46,14 +47,8 @@ public class UserController {
         return "Hello";
     }
 
-    @GetMapping(value = "/callback")
-    public String callbackTest(String code) {
-        log.info("Callback");
-        return "Code: "+code;
-    }
-
     @TokenCheck
-    @GetMapping(value = "/user/info")
+    @GetMapping(value = "/info")
     public Response<List<Member>> getInfo(HttpServletRequest request,
                                           @RequestParam(required = false) String id) {
         log.info("User Info: {}", id);
@@ -67,13 +62,13 @@ public class UserController {
         return new Response<>(result, HttpStatus.OK, SUCCESS);
     }
 
-    @PostMapping(value = "/user/register", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/register", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<String> registInfo(@Valid @RequestBody UserDto userDto) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, BadPaddingException, InvalidKeySpecException, InvalidKeyException {
         userService.register(userDto);
         return new Response<>("success", HttpStatus.OK, SUCCESS);
     }
 
-    @PostMapping(value = "/user/idp/register")
+    @PostMapping(value = "/idp/register")
     public Response<Void> isIdpRegister(@RequestBody IDPLoginDto dto) {
         userService.registerIdp(dto);
         return new Response<>(HttpStatus.OK, ResponseStatus.SUCCESS.getCode());
@@ -85,7 +80,7 @@ public class UserController {
         return new Response<>(result, HttpStatus.OK, SUCCESS);
     }
 
-    @PostMapping(value = "/user/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<Member> getMemberInfo(@Valid @RequestBody LoginDto loginDto) throws NoSuchPaddingException, IllegalBlockSizeException, UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeySpecException, BadPaddingException, InvalidKeyException {
         log.info("User Login");
         Member member = userService.login(loginDto.getUserId(), loginDto.getUserPw());
@@ -96,7 +91,7 @@ public class UserController {
         return new Response<>(member, HttpStatus.OK, SUCCESS);
     }
 
-    @PostMapping(value = "/user/idp/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/idp/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Response<Member> getIdpMemberInfo(@Valid @RequestBody IDPLoginDto idpLoginDto) {
 
         IdpUser idpUser = oAuthService.verifyIDPToken(idpLoginDto.getIdpToken(), idpLoginDto.getIdpType());

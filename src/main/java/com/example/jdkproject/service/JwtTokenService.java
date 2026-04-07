@@ -39,12 +39,14 @@ public class JwtTokenService {
     // 토큰 유효시간 60분
     private final long accessTokenTtl = 60 * 60 * 1000L;
     private final long refreshTokenTtl = 60 * 60 * 24 * 7 * 1000L;
+    private final String ACCESS_TOKEN_KEY = "auth:at:";
+    private final String REFRESH_TOKEN_KEY = "auth:rt:";
 
     // JWT 토큰 생성
     public String createAccessToken(Member member, PrivateKey privateKey) {
 
         String jti = createJti();
-        String key = "auth:at:" + member.getMemberId();
+        String key = ACCESS_TOKEN_KEY + member.getMemberId();
 
         Date now = new Date();
 
@@ -70,7 +72,7 @@ public class JwtTokenService {
         secureRandom.nextBytes(randomBytes);
 
         String refreshToken = Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
-        String refreshTokenKey = "RT:" + refreshToken;
+        String refreshTokenKey = REFRESH_TOKEN_KEY + refreshToken;
 
         redisService.saveToRedis(refreshTokenKey, member.getMemberId(), refreshTokenTtl);
 
@@ -113,7 +115,7 @@ public class JwtTokenService {
         // get jti and info from redis
         String jti = claims.get("jti");
         String memberId = redisService.getFromRedis(jti).toString();
-        String key = "auth:at:" + memberId;
+        String key = ACCESS_TOKEN_KEY + memberId;
 
         // token 조회 (최근 허용 토큰 체크)
         List<String> tokenList = redisService.getListFromRedis(key);
@@ -146,7 +148,7 @@ public class JwtTokenService {
     }
 
     public TokenDto validateRefreshToken(String refreshToken, String memberId) {
-        String refreshTokenKey = "RT:"+refreshToken;
+        String refreshTokenKey = REFRESH_TOKEN_KEY + refreshToken;
         String memberIdFromRefreshToken = String.valueOf(redisService.getFromRedis(refreshTokenKey));
 
         if (!memberId.equals(memberIdFromRefreshToken)) {

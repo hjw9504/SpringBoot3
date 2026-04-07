@@ -20,6 +20,7 @@ import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/chat")
 @RestController
 public class ChattingController {
 
@@ -30,7 +31,7 @@ public class ChattingController {
     private final static int SUCCESS = 0;
 
     @TokenCheck
-    @GetMapping(value = "/chat/room")
+    @GetMapping(value = "/room")
     public Response<List<ChatRoomVo>> getChattingRoomList(HttpServletRequest request,
                                                           @RequestParam(required = false, value = "member_id") String memberId) {
 
@@ -39,14 +40,14 @@ public class ChattingController {
     }
 
     @TokenCheck
-    @PostMapping(value = "/chat/room")
+    @PostMapping(value = "/room")
     public Response<Void> createChattingRoom(@RequestBody ChattingDto dto) {
         chattingService.createChattingRoom(dto);
         return new Response<>(HttpStatus.OK, SUCCESS);
     }
 
     @TokenCheck
-    @GetMapping(value = "/chat/message")
+    @GetMapping(value = "/message")
     public Response<List<ChatLogResultProjection>> getChattingList(HttpServletRequest request,
                                                                    @RequestParam(value = "room_id") long roomId) {
 
