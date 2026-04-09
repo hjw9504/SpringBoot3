@@ -3,23 +3,16 @@ package com.example.jdkproject.controller;
 import com.example.jdkproject.domain.Response;
 import com.example.jdkproject.dto.IDPLoginDto;
 import com.example.jdkproject.dto.IdpUser;
-import com.example.jdkproject.entity.OAuthVo;
 import com.example.jdkproject.enums.ResponseStatus;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.OAuthService;
 import com.example.jdkproject.service.UserService;
-import com.example.jdkproject.service.thirdparty.ThirdService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor

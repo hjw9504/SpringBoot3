@@ -70,8 +70,7 @@ public class OAuthService {
         }
     }
 
-    public IdpUser verifyIDPToken(String idpType, String token) {
-
+    public IdpUser verifyIDPToken(String token, String idpType) {
         String sub = serviceMap.get(idpType).verifyIDPToken(token);
 
         return IdpUser.builder()

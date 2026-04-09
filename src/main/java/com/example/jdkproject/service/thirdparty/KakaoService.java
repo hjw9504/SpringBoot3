@@ -2,7 +2,6 @@ package com.example.jdkproject.service.thirdparty;
 
 import com.example.jdkproject.client.KakaoAuthClient;
 import com.example.jdkproject.client.KakaoOidcClient;
-import com.example.jdkproject.domain.KakaoOIDCResponse;
 import com.example.jdkproject.domain.OAuth2Response;
 import com.example.jdkproject.domain.OAuth2Request;
 import com.example.jdkproject.entity.OAuthVo;
