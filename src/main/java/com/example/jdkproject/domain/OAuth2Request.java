@@ -8,8 +8,10 @@ import lombok.Data;
 public class OAuth2Request {
     String grant_type;
     String client_id;
+    String client_secret;
     String redirect_uri;
     String code;
-    String client_secret;
-    String scope;
+    String state;
+    String code_challenge;
+    String code_challenge_method;
 }

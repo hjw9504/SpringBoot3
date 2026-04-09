@@ -9,11 +9,17 @@ import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.service.OAuthService;
 import com.example.jdkproject.service.UserService;
+import com.example.jdkproject.service.thirdparty.ThirdService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,25 +33,15 @@ public class OAuthController {
     public RedirectView getIdpOAuthView(@PathVariable String idpType) {
         log.info("idp: {}", idpType);
 
-        OAuthVo oAuthVo = oAuthService.getIdpOAuth(idpType);
-        if (oAuthVo == null) {
-            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
-        }
-
-        String oAuthUrl = oAuthService.getOAuthUrl(oAuthVo);
+        String oAuthUrl = oAuthService.getOAuthUrl(idpType);
 
         return new RedirectView(oAuthUrl);
     }
 
     @GetMapping(value = "/callback/{idpType}")
-    public RedirectView getIdpCallback(@PathVariable String idpType, @RequestParam String code) {
+    public RedirectView getIdpCallback(@PathVariable String idpType, @RequestParam String code, @RequestParam(required = false) String state) {
         try {
-            OAuthVo oAuthVo = oAuthService.getIdpOAuth(idpType);
-            if (oAuthVo == null) {
-                throw new CommonErrorException(ErrorStatus.NOT_FOUND);
-            }
-
-            IDPLoginDto response = oAuthService.getIdToken(oAuthVo, code);
+            IDPLoginDto response = oAuthService.getIdToken(idpType, code, state);
 
             // register 결과 가져오기
             return new RedirectView("http://54.180.225.237/idp/result?idp_token="+response.getIdpToken()+"&idp_type="+response.getIdpType());

@@ -3,7 +3,7 @@ package com.example.jdkproject.domain;
 import lombok.Data;
 
 @Data
-public class KakaoOAuthResponse {
+public class OAuth2Response {
     String token_type;
     String access_token;
     String id_token;
