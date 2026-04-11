@@ -1,7 +1,7 @@
 package com.example.jdkproject.client;
 
-import com.example.jdkproject.domain.OAuth2Request;
-import com.example.jdkproject.domain.OAuth2Response;
+import com.example.jdkproject.domain.thirdparty.OAuth2Request;
+import com.example.jdkproject.domain.thirdparty.OAuth2Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.http.MediaType;

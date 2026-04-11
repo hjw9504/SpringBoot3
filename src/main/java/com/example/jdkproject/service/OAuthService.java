@@ -1,6 +1,5 @@
 package com.example.jdkproject.service;
 
-import com.example.jdkproject.domain.*;
 import com.example.jdkproject.dto.IDPLoginDto;
 import com.example.jdkproject.dto.IdpUser;
 import com.example.jdkproject.entity.MemberChannelVo;
@@ -44,11 +43,10 @@ public class OAuthService {
 
     public IDPLoginDto getIdToken(String idpType, String code, String state) {
         OAuthVo oAuthVo = getIdpOAuth(idpType);
-        OAuth2Response response = serviceMap.get(idpType).getOAuthResponse(oAuthVo, code, state);
+        String response = serviceMap.get(idpType).getOAuthResponse(oAuthVo, code, state);
 
         return IDPLoginDto.builder()
-                .idpToken(response.getAccess_token())
-                .idToken(response.getId_token())
+                .idpToken(response)
                 .idpType(oAuthVo.getIdpType())
                 .build();
     }

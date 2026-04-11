@@ -2,8 +2,7 @@ package com.example.jdkproject.service.thirdparty;
 
 import com.example.jdkproject.client.NaverAuthClient;
 import com.example.jdkproject.client.NaverOidcClient;
-import com.example.jdkproject.domain.OAuth2Request;
-import com.example.jdkproject.domain.OAuth2Response;
+import com.example.jdkproject.domain.thirdparty.OAuth2Request;
 import com.example.jdkproject.entity.OAuthVo;
 import com.example.jdkproject.exception.CommonErrorException;
 import com.example.jdkproject.exception.ErrorStatus;
@@ -46,7 +45,7 @@ public class NaverService implements ThirdService {
     }
 
     @Override
-    public OAuth2Response getOAuthResponse(OAuthVo oAuthVo, String code, String state) {
+    public String getOAuthResponse(OAuthVo oAuthVo, String code, String state) {
 
         OAuth2Request request = OAuth2Request.builder()
                 .grant_type("authorization_code")
@@ -55,7 +54,7 @@ public class NaverService implements ThirdService {
                 .code(code)
                 .build();
 
-        return naverAuthClient.getIdToken(request);
+        return naverAuthClient.getIdToken(request).getAccess_token();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.example.jdkproject.domain;
+package com.example.jdkproject.domain.thirdparty;
 
 import lombok.Data;
 import lombok.Getter;
@@ -6,10 +6,15 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
-public class NaverOAuthResponse {
+public class OAuthTokenResponse {
+    // Kakao
+    private String sub;
+    private String nickname;
+
+    // Naver
     private String resultcode;
     private String message;
-    private Response response; // 실제 유저 정보가 담긴 객체
+    private Response response;
 
     @Getter
     @NoArgsConstructor

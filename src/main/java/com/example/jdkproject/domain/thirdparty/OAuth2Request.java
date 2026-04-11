@@ -1,4 +1,4 @@
-package com.example.jdkproject.domain;
+package com.example.jdkproject.domain.thirdparty;
 
 import lombok.Builder;
 import lombok.Data;
