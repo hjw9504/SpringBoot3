@@ -47,13 +47,11 @@ public class NaverService implements ThirdService {
 
     @Override
     public OAuth2Response getOAuthResponse(OAuthVo oAuthVo, String code, String state) {
-        String clientId = oAuthVo.getClientId();
-        String clientSecret = oAuthVo.getClientSecret();
 
         OAuth2Request request = OAuth2Request.builder()
                 .grant_type("authorization_code")
-                .client_id(clientId)
-                .client_secret(clientSecret)
+                .client_id(oAuthVo.getClientId())
+                .client_secret(oAuthVo.getClientSecret())
                 .code(code)
                 .build();
 

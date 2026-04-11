@@ -37,37 +37,20 @@ public class OAuthService {
         }
     }
 
-    public OAuthVo getIdpOAuth(String idpType) {
-        return oAuthRepository.findIdpOAuth(idpType);
-    }
-
     public String getOAuthUrl(String idpType) {
         OAuthVo oAuthVo = getIdpOAuth(idpType);
-        if (oAuthVo == null) {
-            throw new CommonErrorException(ErrorStatus.NOT_FOUND);
-        }
-
         return serviceMap.get(idpType).getOAuthUrl(oAuthVo);
     }
 
     public IDPLoginDto getIdToken(String idpType, String code, String state) {
-        try {
+        OAuthVo oAuthVo = getIdpOAuth(idpType);
+        OAuth2Response response = serviceMap.get(idpType).getOAuthResponse(oAuthVo, code, state);
 
-            OAuthVo oAuthVo = getIdpOAuth(idpType);
-            if (oAuthVo == null) {
-                throw new CommonErrorException(ErrorStatus.NOT_FOUND);
-            }
-
-            OAuth2Response response = serviceMap.get(idpType).getOAuthResponse(oAuthVo, code, state);
-
-            return IDPLoginDto.builder()
-                    .idpToken(response.getAccess_token())
-                    .idToken(response.getId_token())
-                    .idpType(oAuthVo.getIdpType())
-                    .build();
-        } catch (Exception e) {
-            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
-        }
+        return IDPLoginDto.builder()
+                .idpToken(response.getAccess_token())
+                .idToken(response.getId_token())
+                .idpType(oAuthVo.getIdpType())
+                .build();
     }
 
     public IdpUser verifyIDPToken(String token, String idpType) {
@@ -82,5 +65,10 @@ public class OAuthService {
     public Optional<MemberChannelVo> getIdpRegisterResult(IDPLoginDto dto) {
         IdpUser idpUser = verifyIDPToken(dto.getIdpToken(), dto.getIdpType());
         return memberChannelRepository.findUserByIdpUserIdAndIdpType(idpUser.getIdpUserId(), idpUser.getIdpType());
+    }
+
+    private OAuthVo getIdpOAuth(String idpType) {
+        return Optional.ofNullable(oAuthRepository.findIdpOAuth(idpType))
+                .orElseThrow(() -> new CommonErrorException(ErrorStatus.NOT_FOUND));
     }
 }

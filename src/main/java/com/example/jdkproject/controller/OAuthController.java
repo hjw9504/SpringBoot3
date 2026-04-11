@@ -41,7 +41,7 @@ public class OAuthController {
         } catch (CommonErrorException e) {
             throw e;
         } catch (Exception e) {
-            throw new CommonErrorException(ErrorStatus.SERVER_ERROR);
+            throw new CommonErrorException(ErrorStatus.TOKEN_VERIFY_FAIL);
         }
     }
 
