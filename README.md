@@ -630,12 +630,151 @@ SUBSCRIBE /sub/chat/room/{roomId}
 
 ---
 
+## 토큰 구조
+
+### Access Token (JWT)
+
+로그인 성공 시 발급되는 JWT입니다. 알고리즘은 **RS512** (RSA-2048 비대칭키)이며 유효시간은 **60분**입니다.
+
+#### JWT 구조
+
+```
+Header.Payload.Signature
+```
+
+**Header**
+```json
+{
+  "alg": "RS512",
+  "typ": "JWT"
+}
+```
+
+**Payload (Claims)**
+```json
+{
+  "sub": "550e8400-e29b-41d4-a716-446655440000",  
+  "jti": "aB3xZ9qR1mN7kP2s",                      
+  "iss": "jungs.com",                              
+  "iat": 1717228800,                               
+  "exp": 1717232400                                
+}
+```
+
+**Signature**
+- 사용자별 RSA-2048 **개인키**(`member_secure.private_key`)로 서명
+- 검증 시 동일 사용자의 **공개키**(`member_secure.public_key`)로 확인
+
+---
+
+### Refresh Token
+
+Access Token 재발급에 사용하는 토큰입니다. 유효시간은 **7일**입니다.
+
+- **형식**: 64바이트 난수를 Base64 URL 인코딩 (패딩 없음)
+- **예시**: `xK9mP2qR8nZ3vL5aB7cD1eF4gH6iJ0kM...`
+
+---
+
+### Redis 저장 구조
+
+토큰 검증에 필요한 정보를 Redis에 저장합니다.
+
+| Key 형식 | Value | TTL | 설명 |
+|----------|-------|-----|------|
+| `{jti}` | JtiInfo JSON | 60분 | JWT의 jti claim 값을 키로 사용 |
+| `RT:{refreshToken}` | memberId | 7일 | Refresh Token 검증용 |
+
+**JtiInfo JSON** (Redis에 저장되는 값)
+```json
+{
+  "memberId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "홍길동",
+  "email": "암호화된_이메일"
+}
+```
+
+---
+
+### @TokenCheck 동작 흐름
+
+`@TokenCheck` 어노테이션이 붙은 컨트롤러 메서드는 AOP(`TokenCheckAspect`)가 가로채서 아래 순서로 토큰을 검증합니다.
+
+```
+1. 요청 헤더에서 토큰 추출
+   └─ token: <JWT_TOKEN>
+
+2. JWT Payload Base64 디코딩 → jti 추출 (서명 검증 전)
+
+3. Redis에서 jti로 JtiInfo 조회
+   └─ 없으면 → 401 TOKEN_VERIFY_FAIL
+
+4. JtiInfo.memberId로 DB에서 공개키 조회
+   └─ member_secure 테이블 (Base64 → PublicKey 객체)
+
+5. RS512 서명 검증 + 만료 시각 확인
+   └─ 실패 시 → 401 TOKEN_VERIFY_FAIL
+
+6. 검증 성공 → request.setAttribute("jtiInfo", jtiInfo)
+   └─ 컨트롤러에서 request.getAttribute("jtiInfo")로 사용자 정보 접근
+```
+
+**컨트롤러에서 사용자 정보 접근 예시**
+```java
+@TokenCheck
+@GetMapping("/user/info")
+public Response<?> getInfo(HttpServletRequest request) {
+    JtiInfo jtiInfo = (JtiInfo) request.getAttribute("jtiInfo");
+    String memberId = jtiInfo.getMemberId(); // 인증된 사용자 ID
+    String name     = jtiInfo.getName();
+    String email    = jtiInfo.getEmail();
+    // ...
+}
+```
+
+---
+
+### 토큰 발급/검증 전체 흐름
+
+```
+[회원가입]
+클라이언트 → POST /user/register
+           → DB: member 저장 + RSA-2048 키 쌍 생성 → member_secure 저장
+
+[로그인]
+클라이언트 → POST /user/login
+           → 비밀번호 SHA-256 검증
+           → DB: member_secure에서 개인키 로드
+           → JWT 생성 (RS512, sub=memberId, jti=랜덤20자)
+           → Redis: {jti} → JtiInfo (60분), RT:{refreshToken} → memberId (7일)
+           ← Access Token + Refresh Token 반환
+
+[인증이 필요한 API 호출]
+클라이언트 → 헤더: token: <ACCESS_TOKEN>
+           → @TokenCheck AOP 실행
+             1. JWT payload 파싱 → jti 추출
+             2. Redis: jti → JtiInfo 조회
+             3. DB: memberId → 공개키 조회
+             4. RS512 서명 + 만료 검증
+           → 컨트롤러 실행 (request에 jtiInfo 주입)
+           ← 응답 반환
+
+[Access Token 재발급]
+클라이언트 → Refresh Token 제출
+           → Redis: RT:{token} → memberId 확인
+           → 새 Access Token + Refresh Token 발급
+           → 기존 Refresh Token Redis에서 삭제
+           ← 새 토큰 반환
+```
+
+---
+
 ## 보안
 
 - **비밀번호**: SHA-256 해싱
 - **개인정보(이메일, 전화번호)**: 사용자별 RSA-2048 공개키로 암호화
 - **JWT**: RS512 서명, 유효시간 60분, Redis JTI 검증
-- **RSA 키**: 사용자별 키 쌍을 `member_secure` 테이블에 저장
+- **RSA 키**: 사용자별 키 쌍을 `member_secure` 테이블에 저장 (Base64 인코딩)
 
 ---
 

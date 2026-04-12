@@ -3,7 +3,6 @@ package com.example.jdkproject.service;
 import com.example.jdkproject.domain.Member;
 import com.example.jdkproject.dto.IDPLoginDto;
 import com.example.jdkproject.dto.IdpUser;
-import com.example.jdkproject.dto.JtiInfo;
 import com.example.jdkproject.dto.UserDto;
 import com.example.jdkproject.entity.MemberChannelVo;
 import com.example.jdkproject.entity.MemberSecureVo;
@@ -13,12 +12,10 @@ import com.example.jdkproject.exception.ErrorStatus;
 import com.example.jdkproject.repository.MemberChannelRepository;
 import com.example.jdkproject.repository.MemberRepository;
 import com.example.jdkproject.repository.MemberSecureRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +38,7 @@ public class UserService {
     private final MemberRepository memberRepository;
     private final MemberSecureRepository memberSecureRepository;
     private final MemberChannelRepository memberChannelRepository;
-    private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
+    private final EmailService emailService;
 
     private final static String PROFILE_IMAGE_PREFIX = "https://api.dicebear.com/7.x/lorelei/svg?seed=";
 
@@ -106,6 +102,7 @@ public class UserService {
         String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
         String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
 
+        String plainEmail = userDto.getEmail();
         String encEmail, encPhoneNumber;
 
         if (StringUtils.isNotBlank(userDto.getEmail())) {
@@ -143,6 +140,11 @@ public class UserService {
                 .build();
 
         memberRepository.save(memberVo);
+
+        // 회원가입 완료 이메일
+        if (StringUtils.isNotBlank(plainEmail)) {
+            emailService.sendRegisterEmail(plainEmail, userDto.getName(), userDto.getUserId(), plainEmail, LocalDateTime.now());
+        }
     }
 
     @Transactional

@@ -73,6 +73,10 @@ dependencies {
     // Web Socket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
+    // Mail Sender
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

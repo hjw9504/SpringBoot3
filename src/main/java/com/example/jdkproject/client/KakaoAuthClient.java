@@ -12,4 +12,3 @@ public interface KakaoAuthClient {
     @ResponseBody
     OAuth2Response getIdToken(@RequestBody OAuth2Request OAuthRequest);
 }
-
