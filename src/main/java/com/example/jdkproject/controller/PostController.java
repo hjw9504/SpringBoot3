@@ -63,10 +63,12 @@ public class PostController {
     @TokenCheck
     @PostMapping(value = "/register")
     @ResponseBody
-    public Response<String> saveNewPosting(@Valid @RequestBody Posting posting) {
+    public Response<String> saveNewPosting(HttpServletRequest request,
+                                           @Valid @RequestBody Posting posting) {
         if (posting.getId() == 0) {
             // register
-            postingService.saveNewPost(posting);
+            JtiInfo info = (JtiInfo) request.getAttribute("jtiInfo");
+            postingService.saveNewPost(posting, info.getMemberId());
         } else {
             postingService.updatePost(posting);
         }

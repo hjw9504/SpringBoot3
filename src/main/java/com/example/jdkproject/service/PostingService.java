@@ -79,8 +79,8 @@ public class PostingService {
         return postingVos;
     }
 
-    public void saveNewPost(Posting posting) {
-        PostingVo postingVo = new PostingVo(posting.getTitle(), posting.getBody(), new MemberVo(posting.getMemberId()), LocalDateTime.now().toString());
+    public void saveNewPost(Posting posting, String memberId) {
+        PostingVo postingVo = new PostingVo(posting.getTitle(), posting.getBody(), new MemberVo(memberId), LocalDateTime.now().toString());
         postingRepository.save(postingVo);
     }
 
